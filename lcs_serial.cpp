@@ -8,12 +8,92 @@ class LongestCommonSubsequenceSerial
 private:
   const std::string sequence_a;
   const std::string sequence_b;
-  const uint length_a; // Length of sequence_a.
-  const uint length_b; // Length of sequence_b.
+  const uint length_a;   // Length of sequence_a.
+  const uint length_b;   // Length of sequence_b.
+  const uint max_length; /* The longest common subsequence cannot be longer
+  than the shorter of the two input sequences. */
+  std::string longest_common_subsequence;
 
   uint **matrix; /* Solution matrix - matrix[i][j] stores the length of
     the longest common subsequence of the first i-1 elements of sequence_a
     and the first j-1 elements of sequence_b. */
+
+  // Traces through the matrix to reconstruct the longest common subsequence.
+  void determineLongestCommonSubsequence()
+  {
+
+    // Start at the maximal entry, the bottom-right.
+    uint i = length_a - 1;
+    uint j = length_b - 1;
+    uint current = matrix[i][j];
+    longest_common_subsequence.resize(current, ' ');
+    uint index = current - 1;
+    while (index >= 0)
+    {
+      // Don't go out of bounds.
+      i = std::max(i, 0u);
+      j = std::max(j, 0u);
+
+      /* If we are in the top left corner and index is not out of bounds, then
+      this must be the first common element. */
+      if (i == 0 && j == 0)
+      {
+        longest_common_subsequence[0] = sequence_a[0];
+        break;
+      }
+      uint current = matrix[i][j];
+      uint top, left, top_left;
+      top = left = top_left = 0;
+      if (i > 0 && j > 0)
+      {
+        top_left = matrix[i - 1][j - 1];
+      }
+      if (i > 0)
+      {
+        top = matrix[i - 1][j];
+      }
+      if (j > 0)
+      {
+        left = matrix[i][j - 1];
+      }
+
+      if (top_left == current)
+      {
+        // Go to entry to the top-left.
+        i--;
+        j--;
+        continue;
+      }
+
+      /* If the elements above, to the left, and diagonally to the top left
+      are all the same,  */
+      if (top_left == top && top_left == left)
+      {
+        longest_common_subsequence[index] = sequence_a[i];
+        index--;
+        // Go to entry to the top-left.
+        i--;
+        j--;
+
+        continue;
+      }
+
+      /* If the entry to the top left is lower than the current entry but is not
+      equal to the entries above and to the left, then either the one above or
+      the one to the left must be the same as the current. */
+      if (top == current)
+      {
+        // Go to the entry above.
+        i--;
+        continue;
+      }
+      else
+      {
+        // If it wasn't the one above, it must be the one to the left.
+        j--;
+      }
+    }
+  }
 
   void solve()
   {
@@ -50,11 +130,15 @@ private:
         matrix[i][j] = std::max(top, left);
       }
     }
+
+    determineLongestCommonSubsequence();
   }
 
 public:
   LongestCommonSubsequenceSerial(const std::string sequence_a, const std::string sequence_b)
-      : sequence_a(sequence_a), sequence_b(sequence_b), length_a(sequence_a.length()), length_b(sequence_b.length())
+      : sequence_a(sequence_a), sequence_b(sequence_b),
+        length_a(sequence_a.length()), length_b(sequence_b.length()),
+        max_length(std::max(length_a, length_b))
   {
     matrix = new uint *[length_a];
     for (uint i = 0; i < length_a; i++)
@@ -65,7 +149,6 @@ public:
         matrix[i][j] = 0;
       }
     }
-
     this->solve();
   }
 
@@ -118,7 +201,7 @@ public:
     std::cout << "Sequence A: " << sequence_a << "\n";
     std::cout << "Sequence B: " << sequence_b << "\n";
     std::cout << "Length of the longest common subsequence: " << getLongestSubsequenceLength() << "\n";
-    // std::cout << "Longest common subsequence: " << getLongestSubsequence() << "\n";
+    std::cout << "Longest common subsequence: " << longest_common_subsequence << "\n";
     std::cout << std::endl;
   }
 };
@@ -126,8 +209,11 @@ public:
 int main(int argc, char *argv[])
 {
 
-  std::string sequence_a = "drfghjk";
-  std::string sequence_b = "dlpkgcqiuyhnjk";
+  // std::string sequence_a = "drfghjk";
+  // std::string sequence_b = "dlpkgcqiuyhnjk";
+
+  std::string sequence_a = "dlpkgcqiuyhnjka";
+  std::string sequence_b = "drfghjkf";
 
   LongestCommonSubsequenceSerial lcs(sequence_a, sequence_b);
   lcs.print();
