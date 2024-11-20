@@ -34,3 +34,5 @@
 lcs_serial
 lcs_parallel
 lcs_distributed
+
+.vscode/
