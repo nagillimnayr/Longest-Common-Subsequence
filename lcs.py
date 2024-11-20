@@ -1,6 +1,9 @@
 
-start_seq_a = "amjghexybyrgzczy"
-start_seq_b = "aafcdqbgncrcbihkd"
+# start_seq_a = "amjghexybyrgzczy"
+# start_seq_b = "aafcdqbgncrcbihkd"
+
+start_seq_a = "drfghjk"
+start_seq_b = "dlpkgcqiuyhnjk"
 
 class Lcs:
   def __init__(self, seq_a: str, seq_b: str):
