@@ -1,35 +1,33 @@
-#include "lcs.h"
 #include <iostream>
+#include <atomic>
+#include <thread>
+#include <mutex>
+#include <barrier>
+#include "cxxopts.hpp"
 
-class LongestCommonSubsequenceParallel : public LongestCommonSubsequence
-{
-private:
-  virtual void solve() override
-  {
-    // For sequences of length m and n, the number of diagonals will be
-    // (m + n - 1)
 
-    determineLongestCommonSubsequence();
-  }
+int main(int argc, char* argv[]) {
+    cxxopts::Options options("lcs_parallel", "lcs program for cmpt 431 project using threads");
 
-public:
-  LongestCommonSubsequenceParallel(const std::string sequence_a, const std::string sequence_b)
-      : LongestCommonSubsequence(sequence_a, sequence_b)
-  {
-    this->solve();
-  }
+    options.add_options(
+        "inputs", {
+            {"nThreads", "Number of threads for the program", cxxopts::value<int>()},
+            {"blockSize", "Size of the matrix given to each thread", cxxopts::value<int>()},
+            {"sequenceFile1", "Number of threads for the program", cxxopts::value<std::string>()},
+            {"sequenceFile2", "Number of threads for the program", cxxopts::value<std::string>()}
+    });
+    auto command_options = options.parse(argc, argv); 
+    int n = command_options["nThreads"].as<int>();
+    int bSize = command_options["blockSize"].as<int>();
+    std::string seqOne = command_options["sequenceFile1"].as<std::string>();
+    std::string seqTwo = command_options["sequenceFile2"].as<std::string>();
 
-  virtual ~LongestCommonSubsequenceParallel()
-  {
-  }
-};
 
-int main(int argc, char *argv[])
-{
-  std::string sequence_a = "dlpkgcqiuyhnjka";
-  std::string sequence_b = "drfghjkf";
+    std::cout << "Number of Threads: " << n << std::endl;
+    std::cout << "Matrix Block Size: " << bSize << std::endl;
+    std::cout << "Sequence 1: " << seqOne << std::endl;
+    std::cout << "Sequence 2: " << seqTwo << std::endl;
+    std::cout << "END OF PROGRAM";
 
-  LongestCommonSubsequenceParallel lcs(sequence_a, sequence_b);
-  lcs.print();
-  return 0;
+    return 0;
 }
