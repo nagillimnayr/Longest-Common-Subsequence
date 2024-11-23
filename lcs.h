@@ -167,7 +167,7 @@ public:
   }
 
   // Print the matrix to the console.
-  void print() const
+  void printMatrix() const
   {
     /* Prints the matrix in the format:
      *      b1 b2 b3
@@ -196,12 +196,20 @@ public:
       std::cout << " ]\n";
     }
     std::cout << std::endl;
+  }
 
+  void printInfo()
+  {
     std::cout << "Sequence A: " << sequence_a << "\n";
     std::cout << "Sequence B: " << sequence_b << "\n";
     std::cout << "Length of the longest common subsequence: " << getLongestSubsequenceLength() << "\n";
     std::cout << "Longest common subsequence: " << longest_common_subsequence << "\n";
-    std::cout << std::endl;
+  }
+
+  void print()
+  {
+    printMatrix();
+    printInfo();
   }
 };
 

@@ -1,5 +1,6 @@
 #include <algorithm> // std::max, std::min
 #include <iostream>
+#include <mpi.h>
 
 #include "lcs.h"
 
@@ -10,7 +11,7 @@ private:
   const int world_rank;
 
   // Iterate over diagonal and process each cell.
-  void processDiagonal(const int start_i, const int start_j)
+  void computeDiagonal(const int start_i, const int start_j)
   {
     int i = start_i;
     int j = start_j;
@@ -48,7 +49,7 @@ private:
    * [ 2, 3, 4, 5 ]
    * The height of the matrix is equal to the length of sequence A.
    */
-  void processSubDiagonal(
+  void computeSubDiagonal(
       const int diagonal_index,
       const int start_index, // Starting index within the diagonal.
       const int n_elements   // Number of cells to process.
@@ -72,15 +73,20 @@ private:
       j = diagonal_index - length_a + 1;
     }
 
+    /* Determine the starting position within the diagonal. */
+    i -= start_index;
+    j += start_index;
+
     // Bounds for i index;
-    const int min_i = std::max(i - n_elements, 0);
+    const int min_i = std::max(i - n_elements + 1, 0);
     // Bounds for j index;
-    const int max_j = std::min(j + n_elements, (int)length_b - 1);
+    const int max_j = std::min(j + n_elements - 1, (int)length_b - 1);
 
     // Iterate diagonally.
     while (i >= min_i && j <= max_j)
     {
-      processCell(i, j);
+      matrix[i][j] = world_rank + 1;
+      // processCell(i, j);
       i--; // Go up one row.
       j++; // Go right one column.
     }
@@ -95,21 +101,100 @@ private:
 
     const uint n_diagonals = length_a + length_b - 1;
 
-    int a;
-    for (a = 0; a < length_a; a++)
+    // Traverse matrix in diagonal-major order.
+    for (uint diagonal_index = 0; diagonal_index < n_diagonals; diagonal_index++)
     {
-      // Start at leftmost cell of the diagonal.
-      processDiagonal(a, 0);
-    }
-    a = length_a - 1;
-    print();
-    for (int b = 1; b < length_b; b++)
-    {
-      // Start at leftmost cell of the diagonal.
-      processDiagonal(a, b);
+      // Split up the diagonal amongst the processes.
+
+      // Determine the size of the diagonal.
+      /**
+       * length_a == length_b
+       * [ 1, x, x, x ]
+       * [ 2, x, x, x ]
+       * [ 3, x, x, x ]
+       * [ 4, 3, 2, 1 ]
+       *
+       * length_a < length_b
+       * [ 1, x, x, x ]
+       * [ 2, x, x, x ]
+       * [ 3, 3, 2, 1 ]
+       *
+       *
+       * length_a > length_b
+       * [ 1, x, x, x ]
+       * [ 2, x, x, x ]
+       * [ 3, x, x, x ]
+       * [ 4, x, x, x ]
+       * [ 4, 3, 2, 1 ]
+       *
+       *     0, 1, 2, 3, 4, 5, 6, 7
+       * 0 [ 1, x, x, x, x, x, x, x ]
+       * 1 [ 2, x, x, x, x, x, x, x ]
+       * 2 [ 3, x, x, x, x, x, x, x ]
+       * 3 [ 4, x, x, x, x, x, x, x ]
+       * 4 [ 5, x, x, x, x, x, x, x ]
+       * 5 [ 6, x, x, x, x, x, x, x ]
+       * 6 [ 7, x, x, x, x, x, x, x ]
+       * 7 [ 8, 7, 6, 5, 4, 3, 2, 1 ]
+       *
+       * NOTE: The length of any diagonal cannot be greater than the length of
+       * the smaller dimension (shorter sequence).
+       */
+      uint diagonal_length;
+      if (diagonal_index < length_a)
+      {
+        diagonal_length = diagonal_index + 1;
+      }
+      else
+      {
+        diagonal_length = n_diagonals - diagonal_index;
+      }
+      /* NOTE: The length of any diagonal cannot be greater than the length of
+      the smaller dimension (the shorter sequence). */
+      diagonal_length = std::min(diagonal_length, max_length);
+
+      /* If there are fewer cells in the diagonal than there are processes,
+      then some processes will have no work to do. */
+      int n_processes = std::min(world_size, (int)diagonal_length);
+
+      if (world_rank < n_processes)
+      {
+        // Minimum number of cells for a process to compute in this diagonal.
+        int min_cells_per_process = diagonal_length / n_processes;
+        int excess = diagonal_length % n_processes;
+
+        // Determine where each process should start within the diagonal.
+        int start_index;
+        int n_cells = min_cells_per_process;
+        // If there are n cells remaining, then n processes should get 1 extra cell.
+        if (world_rank < excess)
+        {
+          // Give one extra cell to the first n processes.
+          start_index = world_rank * (min_cells_per_process + 1);
+          n_cells++;
+        }
+        else
+        {
+          /* Offset the rest of the processes' starting positions by the number
+          of excess cells */
+          // start_index = (excess * (min_cells_per_process + 1)) + (world_rank - excess) * min_cells_per_process;
+          start_index = (world_rank * min_cells_per_process) + excess;
+        }
+
+        computeSubDiagonal(diagonal_index, start_index, n_cells);
+      }
+
+      /** Synchronize processes:
+       * Once we know where each process will start and where each process will
+       * finish, the processes will need to get the data for the cells that
+       * they depend on.
+       */
+      /**/
+
+      MPI_Barrier(MPI_COMM_WORLD);
     }
 
-    determineLongestCommonSubsequence();
+    // determineLongestCommonSubsequence();
   }
 
 public:
@@ -132,19 +217,36 @@ public:
 
 int main(int argc, char *argv[])
 {
-  std::string sequence_a = "dlpkgcqiuyhnjka";
+  std::string sequence_a = "dlpkgcqi";
   std::string sequence_b = "drfghjkf";
 
-  // MPI_Init(NULL, NULL);
+  MPI_Init(NULL, NULL);
 
   int world_size;
-  // MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   int world_rank;
-  // MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-  world_size = world_rank = 0;
+  for (int i = 0; i < world_size; i++)
+  {
+    if (world_rank == i)
+    {
+      std::cout << "Hello world! From process " << world_rank << std::endl;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+
   LongestCommonSubsequenceDistributed lcs(sequence_a, sequence_b, world_size, world_rank);
-  lcs.print();
+  for (int i = 0; i < world_size; i++)
+  {
+    if (world_rank == i)
+    {
+      lcs.printMatrix();
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+
+  MPI_Finalize();
 
   return 0;
 }
