@@ -1,3 +1,4 @@
+#include <algorithm> // std::max, std::min
 #include <iostream>
 
 #include "lcs.h"
@@ -14,6 +15,70 @@ private:
     int i = start_i;
     int j = start_j;
     while (i >= 0 && j < length_b)
+    {
+      processCell(i, j);
+      i--; // Go up one row.
+      j++; // Go right one column.
+    }
+  }
+
+  /**
+   * Iterate over a slice of a diagonal.
+   *
+   * Diagonal indices are counted from top-left to bottom-right.
+   * [ 0, 1, 2, 3 ]
+   * [ 1, 2, 3, 4 ]
+   * [ 2, 3, 4, 5 ]
+   *
+   * A diagonal is traversed from bottom-left element to top-right element.
+   * ex: Order of traversal of diagonal at index 2.
+   * [ x, x, 2, x ]
+   * [ x, 1, x, x ]
+   * [ 0, x, x, x ]
+   *
+   * If the index of the diagonal is less than the height of the matrix, then
+   * the starting index within that diagonal will in the leftmost column.
+   * If the index of the diagonal is greater than or equal to the height of the
+   * matrix, then the starting index within that diagonal will be in the last row.
+   * If the index of the diagonal is equal to the height of the matrix - 1, then
+   * the starting index within that diagonal will be in the leftmost column and
+   * the bottom row (in other words, the bottom-left cell).
+   * [ 0, x, x, x ]
+   * [ 1, x, x, x ]
+   * [ 2, 3, 4, 5 ]
+   * The height of the matrix is equal to the length of sequence A.
+   */
+  void processSubDiagonal(
+      const int diagonal_index,
+      const int start_index, // Starting index within the diagonal.
+      const int n_elements   // Number of cells to process.
+  )
+  {
+    // Determine where the leftmost element of the diagonal is.
+    int i, j;
+    /* If the diagonal index is less than the height of the matrix, then the
+    starting cell will be in the leftmost column (j = 0) and the row will be
+    equal to the index of the diagonal. */
+    if (diagonal_index < length_a)
+    {
+      i = diagonal_index;
+      j = 0;
+    }
+    /* If the diagonal index is greater than or equal to the height of the
+    matrix, then the starting cell will be in the last row. */
+    else
+    {
+      i = length_a - 1;
+      j = diagonal_index - length_a + 1;
+    }
+
+    // Bounds for i index;
+    const int min_i = std::max(i - n_elements, 0);
+    // Bounds for j index;
+    const int max_j = std::min(j + n_elements, (int)length_b - 1);
+
+    // Iterate diagonally.
+    while (i >= min_i && j <= max_j)
     {
       processCell(i, j);
       i--; // Go up one row.
