@@ -21,7 +21,41 @@ protected:
   uint **matrix; /* Solution matrix - matrix[i][j] stores the length of
     the longest common subsequence of the first i-1 elements of sequence_a
     and the first j-1 elements of sequence_b. */
-                 // Traces through the matrix to reconstruct the longest common subsequence.
+
+  /* The logic for computing individual entries of the matrix is the same
+  regardless of which algorithm is being used. */
+  virtual void processCell(const uint i, const uint j)
+  {
+    /* If characters are the same, set the entry to
+        1 + the entry diagonally to the top left. */
+    if (sequence_a[i] == sequence_b[j])
+    {
+      /* If i is 0 then we are in the top row,
+      if j is 0 then we are in the leftmost column,
+      either way, there is no entry diagonally to the top left, so treat it as 0. */
+      uint top_left = 0;
+      if (i > 0 && j > 0)
+      {
+        top_left = matrix[i - 1][j - 1];
+      }
+      matrix[i][j] = top_left + 1;
+      return;
+    }
+    /* If characters are not the same, set entry to the higher of either the entry directly above or the entry directly to the left. */
+    uint top, left;
+    top = left = 0;
+    if (i > 0)
+    {
+      top = matrix[i - 1][j];
+    }
+    if (j > 0)
+    {
+      left = matrix[i][j - 1];
+    }
+    matrix[i][j] = std::max(top, left);
+  }
+
+  // Traces through the matrix to reconstruct the longest common subsequence.
   void determineLongestCommonSubsequence()
   {
 
