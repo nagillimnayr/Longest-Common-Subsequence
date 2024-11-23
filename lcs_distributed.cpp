@@ -9,10 +9,10 @@ private:
   const int world_rank;
 
   // Iterate over diagonal and process each cell.
-  void processDiagonal(const uint start_i, const uint start_j)
+  void processDiagonal(const int start_i, const int start_j)
   {
-    uint i = start_i;
-    uint j = start_j;
+    int i = start_i;
+    int j = start_j;
     while (i >= 0 && j < length_b)
     {
       processCell(i, j);
@@ -30,7 +30,7 @@ private:
 
     const uint n_diagonals = length_a + length_b - 1;
 
-    uint a;
+    int a;
     for (a = 0; a < length_a; a++)
     {
       // Start at leftmost cell of the diagonal.
@@ -38,7 +38,7 @@ private:
     }
     a = length_a - 1;
     print();
-    for (uint b = 1; b < length_b; b++)
+    for (int b = 1; b < length_b; b++)
     {
       // Start at leftmost cell of the diagonal.
       processDiagonal(a, b);
