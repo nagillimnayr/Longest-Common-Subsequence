@@ -2,8 +2,11 @@
 # start_seq_a = "amjghexybyrgzczy"
 # start_seq_b = "aafcdqbgncrcbihkd"
 
-start_seq_a = "drfghjk"
-start_seq_b = "dlpkgcqiuyhnjk"
+# start_seq_a = "drfghjk"
+# start_seq_b = "dlpkgcqiuyhnjk"
+
+start_seq_a = "dlpkgcqiuyhnjka"
+start_seq_b = "drfghjkf"
 
 class Lcs:
   def __init__(self, seq_a: str, seq_b: str):
@@ -71,7 +74,7 @@ class Lcs:
           self.lcs_matrix_count[a][b] = len_left
           
     longest_subsequence = self.lcs_matrix[-1][-1]
-    self.print_matrix_subsequences()
+    # self.print_matrix_subsequences()
     self.print_matrix_counts()
     print('Sequence A: ', self.seq_a)
     print('Sequence B: ', self.seq_b)
