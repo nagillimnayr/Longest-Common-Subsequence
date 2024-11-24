@@ -76,7 +76,7 @@ private:
     int j = start_j;
     while (i >= 0 && j < length_b)
     {
-      processCell(i, j);
+      computeCell(i, j);
       i--; // Go up one row.
       j++; // Go right one column.
     }
@@ -109,7 +109,7 @@ private:
     while (i >= min_i && j <= max_j)
     {
       // matrix[i][j] = world_rank + 1;
-      processCell(i, j);
+      computeCell(i, j);
       i--; // Go up one row.
       j++; // Go right one column.
     }

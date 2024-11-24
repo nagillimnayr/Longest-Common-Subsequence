@@ -28,7 +28,7 @@ protected:
 
   /* The logic for computing individual entries of the matrix is the same
   regardless of which algorithm is being used. */
-  virtual void processCell(const uint i, const uint j)
+  virtual void computeCell(const uint i, const uint j)
   {
     /* Adjust the indices when accessing sequences, to account for extra row and
     column of 0s. in the matrix. */

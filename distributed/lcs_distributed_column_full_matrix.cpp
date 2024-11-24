@@ -80,7 +80,7 @@ protected:
           matrix[i][j - 1] = comm_value;
         }
 
-        processCell(i, j);
+        computeCell(i, j);
         // matrix[i][j] = count++;
 
         /* If we are computing a cell in the rightmost column of our local

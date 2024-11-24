@@ -11,12 +11,14 @@ class LCSDistributedColumn : public LongestCommonSubsequenceDistributed
 protected:
   uint *comm_buffer; // For sending / receiving to other processes.
 
+  uint count = 0;
+
   void computeDiagonal(uint diagonal_index)
   {
     Pair diagonal_start = getDiagonalStart(diagonal_index);
     int i = diagonal_start.first;
     int j = diagonal_start.second;
-    int max_i = length_a - 1;
+    int max_i = matrix_height - 1;
     int min_j = 1;
     uint comm_value;
     while (i <= max_i && j >= min_j)
@@ -38,13 +40,13 @@ protected:
         matrix[i][j - 1] = comm_value;
       }
 
-      processCell(i, j);
-      // matrix[i][j] = count++;
+      computeCell(i, j);
+      // matrix[i][j] = ++count;
 
       /* If we are computing a cell in the rightmost column of our local
       matrix, we must send the results to our neighbor to the right once we
       are done. Unless we are the rightmost process. */
-      if (j == length_b - 1 && world_rank != world_size - 1)
+      if (j == matrix_width - 1 && world_rank != world_size - 1)
       {
         comm_value = matrix[i][j];
         MPI_Send(
@@ -64,69 +66,11 @@ protected:
   virtual void solve() override
   {
 
-    for (int rank = 0; rank < world_size; rank++)
-    {
-      if (rank == world_rank)
-      {
-        std::cout << "Rank: " << world_rank << "\n";
-        printMatrix();
-        std::cout << std::endl;
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-    }
-
     /* Determine number of diagonals in sub-matrix. */
     uint n_diagonals = length_b + length_a - 1;
-    int count = 0;
     for (uint diagonal = 0; diagonal < n_diagonals; diagonal++)
     {
-      Pair diagonal_start = getDiagonalStart(diagonal);
-      int i = diagonal_start.first;
-      int j = diagonal_start.second;
-      int max_i = length_a - 1;
-      int min_j = 1;
-      uint comm_value;
-      while (i <= max_i && j >= min_j)
-      {
-        /* If we are computing a cell in the leftmost column of our local block,
-        then we need to get data from the cells in the rightmost column of our
-        neighboring process to the left. Unless we are the leftmost process. */
-        if (j == min_j && world_rank != 0)
-        {
-
-          MPI_Recv(
-              &comm_value,
-              1, // Only need a single value.
-              MPI_UNSIGNED,
-              world_rank - 1, // Source: Get from neighbor to the left.
-              i,              // Tag: Row index.
-              MPI_COMM_WORLD,
-              MPI_STATUS_IGNORE);
-          // Store the value in the local matrix.
-          matrix[i][j - 1] = comm_value;
-        }
-
-        processCell(i, j);
-        // matrix[i][j] = count++;
-
-        /* If we are computing a cell in the rightmost column of our local
-        block, we must send the results to our neighbor to the right once we
-        are done. Unless we are the rightmost process. */
-        if (j == length_b - 1 && world_rank != world_size - 1)
-        {
-          comm_value = matrix[i][j];
-          MPI_Send(
-              &comm_value,
-              1,
-              MPI_UNSIGNED,
-              world_rank + 1, // Destination: Send to neighbor to the right.
-              i,
-              MPI_COMM_WORLD);
-        }
-
-        i++; // Go down by one.
-        j--; // Go left by one.
-      }
+      computeDiagonal(diagonal);
     }
 
     // Gather all of the data into the main process:
@@ -164,12 +108,12 @@ int main(int argc, char *argv[])
   int world_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-  if (world_rank == 0)
-  {
-    std::cout << "Sequence A: " << sequence_a << std::endl;
-    std::cout << "Sequence B: " << sequence_b << std::endl;
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
+  // if (world_rank == 0)
+  // {
+  //   std::cout << "Sequence A: " << sequence_a << std::endl;
+  //   std::cout << "Sequence B: " << sequence_b << std::endl;
+  // }
+  // MPI_Barrier(MPI_COMM_WORLD);
 
   int length_a = sequence_a.length();
   int length_b = sequence_b.length();
@@ -218,9 +162,8 @@ int main(int argc, char *argv[])
   {
     if (rank == world_rank)
     {
-      std::cout << "Rank: " << world_rank << "\n";
+      std::cout << "\nRank: " << world_rank << "\n";
       lcs.printMatrix();
-      std::cout << std::endl;
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }

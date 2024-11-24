@@ -108,7 +108,7 @@ private:
     {
       // matrix[i][j] = ++count;
       // matrix[i][j] = world_rank + 1;
-      processCell(i, j);
+      computeCell(i, j);
       i++; // Go down one row.
       j--; // Go left one column.
     }

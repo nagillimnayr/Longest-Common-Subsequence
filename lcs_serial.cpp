@@ -11,7 +11,7 @@ private:
     {
       for (uint j = 1; j < matrix_width; j++)
       {
-        processCell(i, j);
+        computeCell(i, j);
       }
     }
     determineLongestCommonSubsequence();
