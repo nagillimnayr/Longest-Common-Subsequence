@@ -7,9 +7,9 @@ class LongestCommonSubsequenceSerial : public LongestCommonSubsequence
 private:
   virtual void solve() override
   {
-    for (uint i = 0; i < length_a; i++)
+    for (uint i = 1; i < matrix_height; i++)
     {
-      for (uint j = 0; j < length_b; j++)
+      for (uint j = 1; j < matrix_width; j++)
       {
         processCell(i, j);
       }
@@ -31,8 +31,8 @@ public:
 
 int main(int argc, char *argv[])
 {
-  std::string sequence_a = "dlpkgcqiuyhnjka";
-  std::string sequence_b = "drfghjkf";
+  std::string sequence_a = "dpgcr";
+  std::string sequence_b = "dghrf";
 
   LongestCommonSubsequenceSerial lcs(sequence_a, sequence_b);
   lcs.print();
