@@ -35,4 +35,9 @@ lcs_serial
 lcs_parallel
 lcs_distributed
 
+lcs_distributed_column
+lcs_distributed_row
+lcs_distributed_diagonal
+lcs_distributed_anti_diagonal
+
 .vscode/
