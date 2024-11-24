@@ -138,7 +138,7 @@ public:
   LongestCommonSubsequence(const std::string sequence_a, const std::string sequence_b)
       : sequence_a(sequence_a), sequence_b(sequence_b),
         length_a(sequence_a.length()), length_b(sequence_b.length()),
-        max_length(std::max(length_a, length_b))
+        max_length(std::min(length_a, length_b))
   {
     matrix = new uint *[length_a];
     for (uint i = 0; i < length_a; i++)
@@ -175,12 +175,25 @@ public:
      * a1 [ x  x  x ]
      * a2 [ x  x  x ]
      */
+
+    // Determine the number of digits in the largest number.
+    uint max_num = matrix[length_a - 1][length_b - 1];
+    uint n_digits = 1;
+    uint n = max_num;
+    while (n >= 10)
+    {
+      n /= 10;
+      n_digits++;
+    }
+    uint min_field_width = n_digits + 1;
+
     // Print the elements of sequence_b along the top row.
-    std::cout << std::setw(3) << " " << std::right; /* Extra padding before first element
-      to account for sequence_a being printed down the left side. */
+    std::cout
+        << std::setw(3) << " " << std::right; /* Extra padding before first element
+        to account for sequence_a being printed down the left side. */
     for (uint j = 0; j < length_b; j++)
     {
-      std::cout << std::setw(2) << sequence_b[j];
+      std::cout << std::setw(min_field_width) << sequence_b[j];
     }
     std::cout << "\n";
 
@@ -191,7 +204,7 @@ public:
                 << std::right;
       for (uint j = 0; j < length_b; j++)
       {
-        std::cout << std::setw(2) << matrix[i][j];
+        std::cout << std::setw(min_field_width) << matrix[i][j];
       }
       std::cout << " ]\n";
     }
