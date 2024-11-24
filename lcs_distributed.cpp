@@ -4,38 +4,37 @@
 
 #include "lcs.h"
 
+struct Pair
+{
+  int first;
+  int second;
+};
+
 class LongestCommonSubsequenceDistributed : public LongestCommonSubsequence
 {
 private:
   const int world_size;
   const int world_rank;
-
-  // Iterate over diagonal and process each cell.
-  void computeDiagonal(const int start_i, const int start_j)
-  {
-    int i = start_i;
-    int j = start_j;
-    while (i >= 0 && j < length_b)
-    {
-      processCell(i, j);
-      i--; // Go up one row.
-      j++; // Go right one column.
-    }
-  }
+  uint *comm_buffer; // For sending / receiving to other processes.
 
   /**
-   * Iterate over a slice of a diagonal.
+   * Returns the Indices of the starting cell of the diagonal.
    *
    * Diagonal indices are counted from top-left to bottom-right.
-   * [ 0, 1, 2, 3 ]
-   * [ 1, 2, 3, 4 ]
-   * [ 2, 3, 4, 5 ]
    *
+   ```
+        [ 0, 1, 2, 3 ]
+        [ 1, 2, 3, 4 ]
+        [ 2, 3, 4, 5 ]
+   ```
    * A diagonal is traversed from bottom-left element to top-right element.
-   * ex: Order of traversal of diagonal at index 2.
-   * [ x, x, 2, x ]
-   * [ x, 1, x, x ]
-   * [ 0, x, x, x ]
+   *  ex: Order of traversal of diagonal at index 2.
+   *
+   ```
+        [ x, x, 2, x ]
+        [ x, 1, x, x ]
+        [ 0, x, x, x ]
+   ```
    *
    * If the index of the diagonal is less than the height of the matrix, then
    * the starting index within that diagonal will in the leftmost column.
@@ -44,18 +43,18 @@ private:
    * If the index of the diagonal is equal to the height of the matrix - 1, then
    * the starting index within that diagonal will be in the leftmost column and
    * the bottom row (in other words, the bottom-left cell).
-   * [ 0, x, x, x ]
-   * [ 1, x, x, x ]
-   * [ 2, 3, 4, 5 ]
+   *
+   ```
+        [ 0, x, x, x ]
+        [ 1, x, x, x ]
+        [ 2, 3, 4, 5 ]
+   ```
    * The height of the matrix is equal to the length of sequence A.
+   *
    */
-  void computeSubDiagonal(
-      const int diagonal_index,
-      const int start_index, // Starting index within the diagonal.
-      const int n_elements   // Number of cells to process.
-  )
+  Pair getIndicesOfDiagonalStart(uint diagonal_index)
   {
-    // Determine where the leftmost element of the diagonal is.
+    // Determine where the starting element of the diagonal is.
     int i, j;
     /* If the diagonal index is less than the height of the matrix, then the
     starting cell will be in the leftmost column (j = 0) and the row will be
@@ -73,6 +72,36 @@ private:
       j = diagonal_index - length_a + 1;
     }
 
+    return {i, j};
+  }
+
+  // Iterate over diagonal and process each cell.
+  void computeDiagonal(const int start_i, const int start_j)
+  {
+    int i = start_i;
+    int j = start_j;
+    while (i >= 0 && j < length_b)
+    {
+      processCell(i, j);
+      i--; // Go up one row.
+      j++; // Go right one column.
+    }
+  }
+
+  /**
+   * Iterate over a slice of a diagonal.
+   */
+  void computeSubDiagonal(
+      const int diagonal_index,
+      const int start_index, // Starting index within the diagonal.
+      const int n_elements   // Number of cells to process.
+  )
+  {
+    // Determine where the starting element of the diagonal is.
+    Pair indices = getIndicesOfDiagonalStart(diagonal_index);
+    int i = indices.first;
+    int j = indices.second;
+
     /* Determine the starting position within the diagonal. */
     i -= start_index;
     j += start_index;
@@ -85,8 +114,8 @@ private:
     // Iterate diagonally.
     while (i >= min_i && j <= max_j)
     {
-      matrix[i][j] = world_rank + 1;
-      // processCell(i, j);
+      // matrix[i][j] = world_rank + 1;
+      processCell(i, j);
       i--; // Go up one row.
       j++; // Go right one column.
     }
@@ -185,16 +214,65 @@ private:
       }
 
       /** Synchronize processes:
-       * Once we know where each process will start and where each process will
-       * finish, the processes will need to get the data for the cells that
-       * they depend on.
+       * Before we can continue to the next diagonal, each process will need to
+       * receive the data for the entries which it will depend on to compute the
+       * next diagonal.
+       *
+       * We don't want every process to broadcast its entire matrix, as only a
+       * subset of the entries along one diagonal will have been updated since
+       * the last syncronization step.
+       *
+       * We can broadcast just the diagonal instead of the entire matrix.
+       *
+       * A further optimization we could do would be to record the indices that
+       * were updated for each rank, and broadcast just those indices and the
+       * new scores at those indices.
        */
       /**/
-
-      MPI_Barrier(MPI_COMM_WORLD);
+      Pair diagonal_start = getIndicesOfDiagonalStart(diagonal_index);
+      for (uint rank = 0; rank < world_size; rank++)
+      {
+        if (rank == world_rank)
+        {
+          int i = diagonal_start.first;
+          int j = diagonal_start.second;
+          for (uint k = 0; k < diagonal_length; k++)
+          {
+            // Copy diagonal into comm buffer.
+            comm_buffer[k] = matrix[i][j];
+            i--;
+            j++;
+          }
+        }
+        // Broadcast diagonal entries.
+        MPI_Bcast(
+            comm_buffer,
+            diagonal_length,
+            MPI_UNSIGNED,
+            rank,
+            MPI_COMM_WORLD);
+        if (rank != world_rank)
+        {
+          int i = diagonal_start.first;
+          int j = diagonal_start.second;
+          // Copy received diagonal entries into local matrix.
+          for (uint k = 0; k < diagonal_length; k++)
+          {
+            // Copy diagonal from comm buffer into local matrix.
+            uint score = comm_buffer[k];
+            // Ignore 0s.
+            if (score > 0)
+            {
+              matrix[i][j] = score;
+            }
+            i--;
+            j++;
+          }
+        }
+      }
     }
 
-    // determineLongestCommonSubsequence();
+    determineLongestCommonSubsequence();
   }
 
 public:
@@ -207,18 +285,20 @@ public:
         world_size(world_size),
         world_rank(world_rank)
   {
+    comm_buffer = new uint[max_length];
     this->solve();
   }
 
   virtual ~LongestCommonSubsequenceDistributed()
   {
+    delete[] comm_buffer;
   }
 };
 
 int main(int argc, char *argv[])
 {
-  std::string sequence_a = "dlpkgcqi";
-  std::string sequence_b = "drfghjkf";
+  std::string sequence_a = "dlpkgcqiuyhnjkahftgdrfdsfaaaaagsza";
+  std::string sequence_b = "drfghjkfdszfwsfgftradesaardgtfyawa";
 
   MPI_Init(NULL, NULL);
 
@@ -227,23 +307,11 @@ int main(int argc, char *argv[])
   int world_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-  for (int i = 0; i < world_size; i++)
-  {
-    if (world_rank == i)
-    {
-      std::cout << "Hello world! From process " << world_rank << std::endl;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-  }
-
   LongestCommonSubsequenceDistributed lcs(sequence_a, sequence_b, world_size, world_rank);
-  for (int i = 0; i < world_size; i++)
+  // Print solution.
+  if (world_rank == 0)
   {
-    if (world_rank == i)
-    {
-      lcs.printMatrix();
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+    lcs.print();
   }
 
   MPI_Finalize();
