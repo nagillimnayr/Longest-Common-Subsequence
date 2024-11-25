@@ -240,7 +240,7 @@ private:
           for (int k = 0; k < diagonal_length; k++)
           {
             // Copy diagonal into comm buffer.
-            comm_buffer[k] = matrix[i][j];
+            comm_buffer[k] = get(i, j);
             i++;
             j--;
           }
@@ -264,7 +264,7 @@ private:
             // Ignore 0s.
             if (score > 0)
             {
-              matrix[i][j] = score;
+              set(i, j, score);
             }
             i++;
             j--;

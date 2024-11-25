@@ -1,18 +1,49 @@
+#include "../cxxopts.hpp"
 #include <algorithm> // std::max, std::min
 #include <iostream>
 #include <mpi.h>
 
 #include "lcs_distributed.h"
 
-/* Column-wise version of distributed LCS. */
-
+/**
+ * Distributed LCS. This version divides the score matrix into blocks of
+ * columns and assigns each block to a process.
+ *
+ * Example (Numbers represent process ranks):
+  ```
+  [ 0 0 1 1 2 2 ]
+  [ 0 0 1 1 2 2 ]
+  [ 0 0 1 1 2 2 ]
+  [ 0 0 1 1 2 2 ]
+  [ 0 0 1 1 2 2 ]
+  [ 0 0 1 1 2 2 ]
+  ```
+ * Each process then traverses its sub-matrix in diagonal-major order.
+ *
+ * With this task mapping, each process only depends on data from the process
+ * to its left, which makes communication quite simple. When computing an entry
+ * in a process' leftmost column, it must receive the data from the entry in
+ * the same row but rightmost column of the left neighboring process. After
+ * computing an entry in the rightmost column, the data from that entry must
+ * be sent to the neighboring process to the right.
+ *
+ * If the specific longest common subsequence is required, then the sub-matrices
+ * can be gathered together once all of the entries have been computed. (This
+ * could probably be optimized by performing the trace-back locally and then
+ * sending the indices + subsequence string to the left neighboring process
+ * instead of sending the entire sub-matrices over the network.).
+ *
+ * If only the length of the longest common subsequence is required, then this
+ * gathering step can be skipped.
+ *
+ * */
 class LCSDistributedColumn : public LongestCommonSubsequenceDistributed
 {
 protected:
   int *comm_buffer; // For sending / receiving to other processes.
 
-  int **local_matrix;
-  int **global_matrix;
+  int *local_matrix;
+  int *global_matrix;
 
   std::string global_sequence_b;
 
@@ -40,7 +71,7 @@ protected:
             MPI_COMM_WORLD,
             MPI_STATUS_IGNORE);
         // Store the value in the local matrix.
-        matrix[i][j - 1] = comm_value;
+        set(i, j - 1, comm_value);
       }
 
       computeCell(i, j);
@@ -51,7 +82,7 @@ protected:
       are done. Unless we are the rightmost process. */
       if (j == matrix_width - 1 && world_rank != world_size - 1)
       {
-        comm_value = matrix[i][j];
+        comm_value = get(i, j);
         MPI_Send(
             &comm_value,
             1,
@@ -66,6 +97,32 @@ protected:
     }
   }
 
+  /** Gathers the sub-matrices from each process together in the root process. */
+  void gather()
+  {
+    int global_matrix_width = global_sequence_b.length();
+
+    // Gather all of the data into the root process:
+    if (world_rank == 0)
+    {
+      /* Use local matrix to keep track of the processes' computed sub matrix. */
+      local_matrix = matrix;
+      // Allocate space for the combined matrix.
+      global_matrix = new int[matrix_height * global_matrix_width];
+
+      MPI_Gather(
+          nullptr,
+
+      );
+    }
+    else
+    {
+      MPI_Gather(
+
+      );
+    }
+  }
+
   virtual void solve() override
   {
 
@@ -76,20 +133,7 @@ protected:
       computeDiagonal(diagonal);
     }
 
-    int global_matrix_width = global_sequence_b.length();
-
-    // Gather all of the data into the main process:
-    if (world_rank == 0)
-    {
-      /* Use local matrix to keep track of the processes' computed sub matrix. */
-      local_matrix = matrix;
-      // Allocate space for the combined matrix.
-      global_matrix = new int *[matrix_height];
-      for (int row = 0; row < matrix_height; row++)
-      {
-        global_matrix[row] = new int[global_matrix_width];
-      }
-    }
+    gather();
 
     // determineLongestCommonSubsequence();
   }
@@ -105,12 +149,17 @@ public:
         global_sequence_b(global_sequence_b)
   {
     comm_buffer = new int[max_length];
+    global_matrix = nullptr;
     this->solve();
   }
 
   virtual ~LCSDistributedColumn()
   {
     delete[] comm_buffer;
+    if (global_matrix)
+    {
+      delete[] global_matrix;
+    }
   }
 };
 
