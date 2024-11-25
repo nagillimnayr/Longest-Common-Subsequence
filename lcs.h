@@ -11,15 +11,15 @@ class LongestCommonSubsequence
 {
 protected:
   const std::string sequence_a;
-  const std::string sequence_b;
+  std::string sequence_b;
   const int length_a;   // Length of sequence_a.
-  const int length_b;   // Length of sequence_b.
+  int length_b;         // Length of sequence_b.
   const int max_length; /* The longest common subsequence cannot be longer
   const int max_length; /* The longest common subsequence cannot be longer
   than the shorter of the two input sequences. */
   std::string longest_common_subsequence;
 
-  const int matrix_width;  // Width of the matrix.
+  int matrix_width;        // Width of the matrix.
   const int matrix_height; // Height of the matrix.
 
   int *matrix; /* Score matrix - matrix[i][j] stores the length of

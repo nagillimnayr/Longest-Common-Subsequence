@@ -40,10 +40,12 @@
 class LCSDistributedColumn : public LongestCommonSubsequenceDistributed
 {
 protected:
-  int *comm_buffer; // For sending / receiving to other processes.
-
   int *local_matrix;
   int *global_matrix;
+
+  /* Need to keep track of this info globally for MPI_Gatherv(). */
+  int *start_cols;
+  int *sub_str_widths;
 
   std::string global_sequence_b;
 
@@ -100,6 +102,8 @@ protected:
   /** Gathers the sub-matrices from each process together in the root process. */
   void gather()
   {
+    printPerProcessMatrix();
+
     int global_matrix_width = global_sequence_b.length();
 
     // Gather all of the data into the root process:
@@ -109,17 +113,61 @@ protected:
       local_matrix = matrix;
       // Allocate space for the combined matrix.
       global_matrix = new int[matrix_height * global_matrix_width];
+      for (int col = 0; col < global_matrix_width; col++)
+      {
+        // Fill first row with zeros.
+        global_matrix[col] = 0;
+      }
+      for (int row = 1; row < matrix_height; row++)
+      {
+        // Fill first column with zeros.
+        global_matrix[row * global_matrix_width] = 0;
+      }
 
-      MPI_Gather(
-          nullptr,
+      /* Sub-matrices may be of different widths, and because the matrix is
+      divided column-wise, passing the entire sub-matrix with MPI_Gather would
+      not properly order the combined matrix.
 
-      );
+      However, if we call MPI_Gatherv for each row, the resultant ordering
+      should be correct. */
+      // int *recv_buffer = new int[global_matrix_width - 1];
+
+      // We can skip the first row since it is all zeros.
+      for (int row = 1; row < matrix_height; row++)
+      {
+        MPI_Gatherv(
+            &matrix[row * matrix_width + 1],
+            sub_str_widths[0],
+            MPI_INT,
+            &global_matrix[row * global_matrix_width + 1],
+            sub_str_widths,
+            start_cols,
+            MPI_INT,
+            0, // Root process.
+            MPI_COMM_WORLD);
+      }
+
+      sequence_b = global_sequence_b;
+      length_b = sequence_b.length();
+      matrix = global_matrix;
+      matrix_width = length_b + 1;
     }
     else
     {
-      MPI_Gather(
-
-      );
+      // We can skip the first row since it is all zeros.
+      for (int row = 1; row < matrix_height; row++)
+      {
+        MPI_Gatherv(
+            matrix + (row * matrix_width) + 2,
+            sub_str_widths[world_rank],
+            MPI_INT,
+            nullptr,
+            sub_str_widths,
+            start_cols,
+            MPI_INT,
+            0, // Root process.
+            MPI_COMM_WORLD);
+      }
     }
   }
 
@@ -135,7 +183,12 @@ protected:
 
     gather();
 
-    // determineLongestCommonSubsequence();
+    printPerProcessMatrix();
+
+    if (world_rank == 0)
+    {
+      determineLongestCommonSubsequence();
+    }
   }
 
 public:
@@ -144,21 +197,39 @@ public:
       const std::string &sequence_b,
       const int world_size,
       const int world_rank,
-      const std::string global_sequence_b)
+      const std::string global_sequence_b,
+      int *start_cols,
+      int *sub_str_widths)
       : LongestCommonSubsequenceDistributed(sequence_a, sequence_b, world_size, world_rank),
-        global_sequence_b(global_sequence_b)
+        global_sequence_b(global_sequence_b),
+        start_cols(start_cols),
+        sub_str_widths(sub_str_widths)
   {
-    comm_buffer = new int[max_length];
     global_matrix = nullptr;
+    local_matrix = nullptr;
     this->solve();
   }
 
   virtual ~LCSDistributedColumn()
   {
-    delete[] comm_buffer;
     if (global_matrix)
-    {
       delete[] global_matrix;
+    if (local_matrix)
+      delete[] local_matrix;
+    delete[] sub_str_widths;
+    delete[] start_cols;
+  }
+
+  void printPerProcessMatrix()
+  {
+    for (int rank = 0; rank < world_size; rank++)
+    {
+      if (rank == world_rank)
+      {
+        std::cout << "\nRank: " << world_rank << "\n";
+        printMatrix();
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
     }
   }
 };
@@ -188,18 +259,30 @@ int main(int argc, char *argv[])
   const int min_n_cols_per_process = length_b / world_size;
   const int excess = length_b % world_size;
 
-  int start_col, end_col, n_cols;
-  n_cols = min_n_cols_per_process;
-  if (world_rank < excess)
+  /* We need to keep track of which columns are mapped to which processes so
+  we can gather them together again at the end with MPI_Gatherv.*/
+  int *sub_str_widths = new int[world_size];
+  int *start_cols = new int[world_size];
+  for (int rank = 0; rank < world_size; rank++)
   {
-    start_col = world_rank * (min_n_cols_per_process + 1);
-    n_cols++;
+    int start_col, n_cols;
+    n_cols = min_n_cols_per_process;
+    if (rank < excess)
+    {
+      start_col = rank * (min_n_cols_per_process + 1);
+      n_cols++;
+    }
+    else
+    {
+      start_col = (rank * min_n_cols_per_process) + excess;
+    }
+
+    start_cols[rank] = start_col;
+    sub_str_widths[rank] = n_cols;
   }
-  else
-  {
-    start_col = (world_rank * min_n_cols_per_process) + excess;
-  }
-  end_col = start_col + n_cols - 1;
+
+  int start_col = start_cols[world_rank];
+  int n_cols = sub_str_widths[world_rank];
 
   // Divide up sequence B.
   std::string local_sequence_b = sequence_b.substr(start_col, n_cols);
@@ -209,7 +292,7 @@ int main(int argc, char *argv[])
     if (rank == world_rank)
     {
       std::cout << "\nRank: " << world_rank << " | start_col: " << start_col
-                << " | end_col: " << end_col << "\n | local sequence B: "
+                << " | end_col: " << start_col + n_cols - 1 << "\n | local sequence B: "
                 << local_sequence_b << std::endl;
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -218,22 +301,29 @@ int main(int argc, char *argv[])
   /*--------------------------------------------------------------------------*/
 
   // LCSDistributedColumn lcs(sequence_a, sequence_b, world_size, world_rank);
-  LCSDistributedColumn lcs(sequence_a, local_sequence_b, world_size, world_rank, sequence_b);
+  LCSDistributedColumn lcs(
+      sequence_a,
+      local_sequence_b,
+      world_size,
+      world_rank,
+      sequence_b,
+      start_cols,
+      sub_str_widths);
   // Print solution.
   // if (world_rank == 0)
   // {
   //   lcs.print();
   // }
 
-  for (int rank = 0; rank < world_size; rank++)
-  {
-    if (rank == world_rank)
-    {
-      std::cout << "\nRank: " << world_rank << "\n";
-      lcs.printMatrix();
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-  }
+  // for (int rank = 0; rank < world_size; rank++)
+  // {
+  //   if (rank == world_rank)
+  //   {
+  //     std::cout << "\nRank: " << world_rank << "\n";
+  //     lcs.printMatrix();
+  //   }
+  //   MPI_Barrier(MPI_COMM_WORLD);
+  // }
   MPI_Finalize();
 
   return 0;
