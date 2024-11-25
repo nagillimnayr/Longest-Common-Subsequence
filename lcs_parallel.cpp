@@ -1,6 +1,6 @@
 // CMPT 431 D100 - Parallel LCS Program
 // Name: Adam Pywell - 301 335 414
-// Name: Ryan
+// Name: Ryan Milligan
 
 // Imported Libraries
 #include "cxxopts.hpp"
@@ -18,7 +18,7 @@
 //  with threads to complete the calculations in parallel
 // ***
 
-// Converted class from Base LongestCommonSequence to paralell verion
+// Converted class from Base LongestCommonSequence to parallel verion
 class LongestCommonSubsequenceParallel : public LongestCommonSubsequence
 {
 private:
