@@ -7,9 +7,9 @@
 class LongestCommonSubsequenceDistributedDiagonal : public LongestCommonSubsequenceDistributed
 {
 private:
-  uint *comm_buffer; // For sending / receiving to other processes.
+  int *comm_buffer; // For sending / receiving to other processes.
 
-  uint count = 0;
+  int count = 0;
 
   /**
    * Returns the Indices of the starting cell of the diagonal.
@@ -46,7 +46,7 @@ private:
    * The height of the matrix is equal to the length of sequence A.
    *
    */
-  Pair getIndicesOfDiagonalStart(uint diagonal_index)
+  Pair getIndicesOfDiagonalStart(int diagonal_index)
   {
     // Determine where the starting element of the diagonal is.
     int i, j;
@@ -91,7 +91,7 @@ private:
     j -= start_index;
 
     // Bounds for i index;
-    const int max_i = std::min(i + n_elements - 1, (int)matrix_height - 1);
+    const int max_i = std::min(i + n_elements - 1, matrix_height - 1);
     // Bounds for j index;
     const int min_j = std::max(j - n_elements + 1, 1);
 
@@ -121,10 +121,10 @@ private:
     they have no dependence on one another. Each diagonal, however, depends
     on the previous two diagonals. */
 
-    const uint n_diagonals = length_a + length_b - 1;
+    const int n_diagonals = length_a + length_b - 1;
 
     // Traverse matrix in diagonal-major order.
-    for (uint diagonal_index = 0; diagonal_index < n_diagonals; diagonal_index++)
+    for (int diagonal_index = 0; diagonal_index < n_diagonals; diagonal_index++)
     {
       // Split up the diagonal amongst the processes.
 
@@ -162,7 +162,7 @@ private:
        * NOTE: The length of any diagonal cannot be greater than the length of
        * the smaller dimension (shorter sequence).
        */
-      uint diagonal_length;
+      int diagonal_length;
       if (diagonal_index < max_length)
       {
         diagonal_length = diagonal_index + 1;
@@ -177,7 +177,7 @@ private:
 
       /* If there are fewer cells in the diagonal than there are processes,
       then some processes will have no work to do. */
-      int n_processes = std::min(world_size, (int)diagonal_length);
+      int n_processes = std::min(world_size, diagonal_length);
 
       if (world_rank < n_processes)
       {
@@ -223,13 +223,13 @@ private:
        */
       /**/
       Pair diagonal_start = getIndicesOfDiagonalStart(diagonal_index);
-      for (uint rank = 0; rank < world_size; rank++)
+      for (int rank = 0; rank < world_size; rank++)
       {
         if (rank == world_rank)
         {
           int i = diagonal_start.first;
           int j = diagonal_start.second;
-          for (uint k = 0; k < diagonal_length; k++)
+          for (int k = 0; k < diagonal_length; k++)
           {
             // Copy diagonal into comm buffer.
             comm_buffer[k] = matrix[i][j];
@@ -249,10 +249,10 @@ private:
           int i = diagonal_start.first;
           int j = diagonal_start.second;
           // Copy received diagonal entries into local matrix.
-          for (uint k = 0; k < diagonal_length; k++)
+          for (int k = 0; k < diagonal_length; k++)
           {
             // Copy diagonal from comm buffer into local matrix.
-            uint score = comm_buffer[k];
+            int score = comm_buffer[k];
             // Ignore 0s.
             if (score > 0)
             {
@@ -270,13 +270,13 @@ private:
 
 public:
   LongestCommonSubsequenceDistributedDiagonal(
-      const std::string sequence_a,
-      const std::string sequence_b,
+      const std::string &sequence_a,
+      const std::string &sequence_b,
       const int world_size,
       const int world_rank)
       : LongestCommonSubsequenceDistributed(sequence_a, sequence_b, world_size, world_rank)
   {
-    comm_buffer = new uint[max_length];
+    comm_buffer = new int[max_length];
     this->solve();
   }
 

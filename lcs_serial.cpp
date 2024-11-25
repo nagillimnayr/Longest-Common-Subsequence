@@ -7,9 +7,9 @@ class LongestCommonSubsequenceSerial : public LongestCommonSubsequence
 private:
   virtual void solve() override
   {
-    for (uint i = 1; i < matrix_height; i++)
+    for (int i = 1; i < matrix_height; i++)
     {
-      for (uint j = 1; j < matrix_width; j++)
+      for (int j = 1; j < matrix_width; j++)
       {
         computeCell(i, j);
       }
@@ -18,7 +18,7 @@ private:
   }
 
 public:
-  LongestCommonSubsequenceSerial(const std::string sequence_a, const std::string sequence_b)
+  LongestCommonSubsequenceSerial(const std::string &sequence_a, const std::string &sequence_b)
       : LongestCommonSubsequence(sequence_a, sequence_b)
   {
     this->solve();

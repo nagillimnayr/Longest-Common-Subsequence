@@ -12,23 +12,23 @@ class LongestCommonSubsequence
 protected:
   const std::string sequence_a;
   const std::string sequence_b;
-  const uint length_a;   // Length of sequence_a.
-  const uint length_b;   // Length of sequence_b.
-  const uint max_length; /* The longest common subsequence cannot be longer
-  const uint max_length; /* The longest common subsequence cannot be longer
+  const int length_a;   // Length of sequence_a.
+  const int length_b;   // Length of sequence_b.
+  const int max_length; /* The longest common subsequence cannot be longer
+  const int max_length; /* The longest common subsequence cannot be longer
   than the shorter of the two input sequences. */
   std::string longest_common_subsequence;
 
-  const uint matrix_width;  // Width of the matrix.
-  const uint matrix_height; // Height of the matrix.
+  const int matrix_width;  // Width of the matrix.
+  const int matrix_height; // Height of the matrix.
 
-  uint **matrix; /* Solution matrix - matrix[i][j] stores the length of
+  int **matrix; /* Solution matrix - matrix[i][j] stores the length of
     the longest common subsequence of the first i-1 elements of sequence_a
     and the first j-1 elements of sequence_b. */
 
   /* The logic for computing individual entries of the matrix is the same
   regardless of which algorithm is being used. */
-  virtual void computeCell(const uint i, const uint j)
+  virtual void computeCell(const int i, const int j)
   {
     /* Adjust the indices when accessing sequences, to account for extra row and
     column of 0s. in the matrix. */
@@ -39,7 +39,7 @@ protected:
       /* If i is 0 then we are in the top row,
       if j is 0 then we are in the leftmost column,
       either way, there is no entry diagonally to the top left, so treat it as 0. */
-      uint top_left = 0;
+      int top_left = 0;
       if (i > 0 && j > 0)
       {
         top_left = matrix[i - 1][j - 1];
@@ -48,7 +48,7 @@ protected:
       return;
     }
     /* If characters are not the same, set entry to the higher of either the entry directly above or the entry directly to the left. */
-    uint top, left;
+    int top, left;
     top = left = 0;
     if (i > 0)
     {
@@ -65,16 +65,16 @@ protected:
   void determineLongestCommonSubsequence()
   {
     // Start at the maximal entry, the bottom-right.
-    uint i = matrix_height - 1;
-    uint j = matrix_width - 1;
-    uint current = matrix[i][j];
+    int i = matrix_height - 1;
+    int j = matrix_width - 1;
+    int current = matrix[i][j];
     longest_common_subsequence.resize(current, ' ');
-    uint index = current - 1;
+    int index = current - 1;
     while (index >= 0)
     {
       // Don't go out of bounds.
-      i = std::max(i, 0u);
-      j = std::max(j, 0u);
+      i = std::max(i, 0);
+      j = std::max(j, 0);
 
       if (i == 0 && j == 0)
       {
@@ -82,8 +82,8 @@ protected:
         break;
       }
 
-      uint current = matrix[i][j];
-      uint top, left, top_left;
+      int current = matrix[i][j];
+      int top, left, top_left;
       top = left = top_left = 0;
       if (i > 0 && j > 0)
       {
@@ -139,26 +139,26 @@ protected:
   virtual void solve() = 0;
 
 public:
-  LongestCommonSubsequence(const std::string sequence_a, const std::string sequence_b)
+  LongestCommonSubsequence(const std::string &sequence_a, const std::string &sequence_b)
       : sequence_a(sequence_a), sequence_b(sequence_b),
         length_a(sequence_a.length()), length_b(sequence_b.length()),
         max_length(std::min(length_a, length_b)),
         matrix_width(length_b + 1), matrix_height(length_a + 1)
   {
-    matrix = new uint *[matrix_height];
-    for (uint i = 0; i < matrix_height; i++)
+    matrix = new int *[matrix_height];
+    for (int i = 0; i < matrix_height; i++)
     {
-      matrix[i] = new uint[matrix_width];
+      matrix[i] = new int[matrix_width];
       // Fill leftmost column with 0s.
       matrix[i][0] = 0;
 
-      // for (uint j = 0; j < matrix_width; j++)
+      // for (int j = 0; j < matrix_width; j++)
       // {
       //   // Fill with 0s.
       //   matrix[i][j] = 0;
       // }
     }
-    for (uint j = 0; j < matrix_width; j++)
+    for (int j = 0; j < matrix_width; j++)
     {
       // Fill top row with 0s.
       matrix[0][j] = 0;
@@ -167,7 +167,7 @@ public:
 
   virtual ~LongestCommonSubsequence()
   {
-    for (uint i = 0; i < length_a; i++)
+    for (int i = 0; i < length_a; i++)
     {
       delete matrix[i];
     }
@@ -175,7 +175,7 @@ public:
   }
 
   // Returns the length of the longest common subsequence.
-  uint getLongestSubsequenceLength() const
+  int getLongestSubsequenceLength() const
   {
     return matrix[matrix_height - 1][matrix_width - 1];
   }
@@ -191,28 +191,28 @@ public:
      */
 
     // Determine the number of digits in the largest number.
-    uint max_num = getLongestSubsequenceLength();
-    uint n_digits = 1;
-    uint n = max_num;
+    int max_num = getLongestSubsequenceLength();
+    int n_digits = 1;
+    int n = max_num;
     while (n >= 10)
     {
       n /= 10;
       n_digits++;
     }
-    uint min_field_width = n_digits + 1;
+    int min_field_width = n_digits + 1;
 
     // Print the elements of sequence_b along the top row.
     std::cout
         << std::setw(3) << " " << std::right; /* Extra padding before first element
         to account for sequence_a being printed down the left side. */
     std::cout << std::setw(min_field_width) << " ";
-    for (uint j = 1; j < matrix_width; j++)
+    for (int j = 1; j < matrix_width; j++)
     {
       std::cout << std::setw(min_field_width) << sequence_b[j - 1];
     }
     std::cout << "\n";
 
-    for (uint i = 0; i < matrix_height; i++)
+    for (int i = 0; i < matrix_height; i++)
     {
       // Print sequence_a down the left side of the matrix.
       if (i > 0)
@@ -225,7 +225,7 @@ public:
       }
       std::cout << " [" << std::right;
 
-      for (uint j = 0; j < matrix_width; j++)
+      for (int j = 0; j < matrix_width; j++)
       {
         std::cout << std::setw(min_field_width) << matrix[i][j];
       }

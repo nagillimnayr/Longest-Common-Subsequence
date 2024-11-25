@@ -9,7 +9,7 @@
 class LCSDistributedColumn : public LongestCommonSubsequenceDistributed
 {
 protected:
-  uint *comm_buffer; // For sending / receiving to other processes.
+  int *comm_buffer; // For sending / receiving to other processes.
 
   virtual void solve() override
   {
@@ -32,10 +32,10 @@ protected:
      * Each block is then traversed in anti-diagonal order.
      **/
 
-    const uint min_n_cols_per_process = length_b / world_size;
-    const uint excess = length_b % world_size;
+    const int min_n_cols_per_process = length_b / world_size;
+    const int excess = length_b % world_size;
 
-    uint start_col, end_col, n_cols;
+    int start_col, end_col, n_cols;
     n_cols = min_n_cols_per_process;
     if (world_rank < excess)
     {
@@ -49,9 +49,9 @@ protected:
     end_col = start_col + n_cols - 1;
 
     /* Determine number of diagonals in sub-matrix. */
-    uint n_diagonals = n_cols + length_a - 1;
+    int n_diagonals = n_cols + length_a - 1;
     int count = 0;
-    for (uint diagonal = 0; diagonal < n_diagonals; diagonal++)
+    for (int diagonal = 0; diagonal < n_diagonals; diagonal++)
     {
       Pair diagonal_start = getDiagonalStart(diagonal, n_cols);
       // Offset column index by the starting column.
@@ -59,7 +59,7 @@ protected:
       int j = diagonal_start.second + start_col;
       int max_i = length_a - 1;
       int min_j = start_col;
-      uint comm_value;
+      int comm_value;
       while (i <= max_i && j >= min_j)
       {
         /* If we are computing a cell in the leftmost column of our local block,
@@ -110,13 +110,13 @@ protected:
 
 public:
   LCSDistributedColumn(
-      const std::string sequence_a,
-      const std::string sequence_b,
+      const std::string &sequence_a,
+      const std::string &sequence_b,
       const int world_size,
       const int world_rank)
       : LongestCommonSubsequenceDistributed(sequence_a, sequence_b, world_size, world_rank)
   {
-    comm_buffer = new uint[max_length];
+    comm_buffer = new int[max_length];
     this->solve();
   }
 
@@ -148,10 +148,10 @@ int main(int argc, char *argv[])
   int length_a = sequence_a.length();
   int length_b = sequence_b.length();
 
-  const uint min_n_cols_per_process = length_b / world_size;
-  const uint excess = length_b % world_size;
+  const int min_n_cols_per_process = length_b / world_size;
+  const int excess = length_b % world_size;
 
-  uint start_col, end_col, n_cols;
+  int start_col, end_col, n_cols;
   n_cols = min_n_cols_per_process;
   if (world_rank < excess)
   {

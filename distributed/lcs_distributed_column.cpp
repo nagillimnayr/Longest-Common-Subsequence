@@ -9,21 +9,21 @@
 class LCSDistributedColumn : public LongestCommonSubsequenceDistributed
 {
 protected:
-  uint *comm_buffer; // For sending / receiving to other processes.
+  int *comm_buffer; // For sending / receiving to other processes.
 
-  uint **local_matrix;
-  uint **global_matrix;
+  int **local_matrix;
+  int **global_matrix;
 
   std::string global_sequence_b;
 
-  void computeDiagonal(uint diagonal_index)
+  void computeDiagonal(int diagonal_index)
   {
     Pair diagonal_start = getDiagonalStart(diagonal_index);
     int i = diagonal_start.first;
     int j = diagonal_start.second;
     int max_i = matrix_height - 1;
     int min_j = 1;
-    uint comm_value;
+    int comm_value;
     while (i <= max_i && j >= min_j)
     {
       /* If we are computing a cell in the leftmost column of our local matrix,
@@ -70,13 +70,13 @@ protected:
   {
 
     /* Determine number of diagonals in sub-matrix. */
-    uint n_diagonals = length_b + length_a - 1;
-    for (uint diagonal = 0; diagonal < n_diagonals; diagonal++)
+    int n_diagonals = length_b + length_a - 1;
+    for (int diagonal = 0; diagonal < n_diagonals; diagonal++)
     {
       computeDiagonal(diagonal);
     }
 
-    uint global_matrix_width = global_sequence_b.length();
+    int global_matrix_width = global_sequence_b.length();
 
     // Gather all of the data into the main process:
     if (world_rank == 0)
@@ -84,10 +84,10 @@ protected:
       /* Use local matrix to keep track of the processes' computed sub matrix. */
       local_matrix = matrix;
       // Allocate space for the combined matrix.
-      global_matrix = new uint *[matrix_height];
-      for (uint row = 0; row < matrix_height; row++)
+      global_matrix = new int *[matrix_height];
+      for (int row = 0; row < matrix_height; row++)
       {
-        global_matrix[row] = new uint[global_matrix_width];
+        global_matrix[row] = new int[global_matrix_width];
       }
     }
 
@@ -96,15 +96,15 @@ protected:
 
 public:
   LCSDistributedColumn(
-      const std::string sequence_a,
-      const std::string sequence_b,
+      const std::string &sequence_a,
+      const std::string &sequence_b,
       const int world_size,
       const int world_rank,
       const std::string global_sequence_b)
       : LongestCommonSubsequenceDistributed(sequence_a, sequence_b, world_size, world_rank),
         global_sequence_b(global_sequence_b)
   {
-    comm_buffer = new uint[max_length];
+    comm_buffer = new int[max_length];
     this->solve();
   }
 
@@ -136,10 +136,10 @@ int main(int argc, char *argv[])
   int length_a = sequence_a.length();
   int length_b = sequence_b.length();
 
-  const uint min_n_cols_per_process = length_b / world_size;
-  const uint excess = length_b % world_size;
+  const int min_n_cols_per_process = length_b / world_size;
+  const int excess = length_b % world_size;
 
-  uint start_col, end_col, n_cols;
+  int start_col, end_col, n_cols;
   n_cols = min_n_cols_per_process;
   if (world_rank < excess)
   {

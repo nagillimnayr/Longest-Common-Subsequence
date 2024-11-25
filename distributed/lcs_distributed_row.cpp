@@ -9,7 +9,7 @@
 class LCSDistributedColumn : public LongestCommonSubsequenceDistributed
 {
 protected:
-  uint *comm_buffer; // For sending / receiving to other processes.
+  int *comm_buffer; // For sending / receiving to other processes.
 
   virtual void solve() override
   {
@@ -18,8 +18,8 @@ protected:
 
 public:
   LCSDistributedColumn(
-      const std::string sequence_a,
-      const std::string sequence_b,
+      const std::string &sequence_a,
+      const std::string &sequence_b,
       const int world_size,
       const int world_rank)
       : LongestCommonSubsequenceDistributed(sequence_a, sequence_b, world_size, world_rank)
