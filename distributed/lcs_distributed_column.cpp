@@ -11,7 +11,10 @@ class LCSDistributedColumn : public LongestCommonSubsequenceDistributed
 protected:
   uint *comm_buffer; // For sending / receiving to other processes.
 
-  uint count = 0;
+  uint **local_matrix;
+  uint **global_matrix;
+
+  std::string global_sequence_b;
 
   void computeDiagonal(uint diagonal_index)
   {
@@ -73,7 +76,20 @@ protected:
       computeDiagonal(diagonal);
     }
 
+    uint global_matrix_width = global_sequence_b.length();
+
     // Gather all of the data into the main process:
+    if (world_rank == 0)
+    {
+      /* Use local matrix to keep track of the processes' computed sub matrix. */
+      local_matrix = matrix;
+      // Allocate space for the combined matrix.
+      global_matrix = new uint *[matrix_height];
+      for (uint row = 0; row < matrix_height; row++)
+      {
+        global_matrix[row] = new uint[global_matrix_width];
+      }
+    }
 
     // determineLongestCommonSubsequence();
   }
@@ -83,8 +99,10 @@ public:
       const std::string sequence_a,
       const std::string sequence_b,
       const int world_size,
-      const int world_rank)
-      : LongestCommonSubsequenceDistributed(sequence_a, sequence_b, world_size, world_rank)
+      const int world_rank,
+      const std::string global_sequence_b)
+      : LongestCommonSubsequenceDistributed(sequence_a, sequence_b, world_size, world_rank),
+        global_sequence_b(global_sequence_b)
   {
     comm_buffer = new uint[max_length];
     this->solve();
@@ -108,12 +126,12 @@ int main(int argc, char *argv[])
   int world_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-  // if (world_rank == 0)
-  // {
-  //   std::cout << "Sequence A: " << sequence_a << std::endl;
-  //   std::cout << "Sequence B: " << sequence_b << std::endl;
-  // }
-  // MPI_Barrier(MPI_COMM_WORLD);
+  if (world_rank == 0)
+  {
+    std::cout << "Sequence A: " << sequence_a << std::endl;
+    std::cout << "Sequence B: " << sequence_b << std::endl;
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
 
   int length_a = sequence_a.length();
   int length_b = sequence_b.length();
@@ -151,7 +169,7 @@ int main(int argc, char *argv[])
   /*--------------------------------------------------------------------------*/
 
   // LCSDistributedColumn lcs(sequence_a, sequence_b, world_size, world_rank);
-  LCSDistributedColumn lcs(sequence_a, local_sequence_b, world_size, world_rank);
+  LCSDistributedColumn lcs(sequence_a, local_sequence_b, world_size, world_rank, sequence_b);
   // Print solution.
   // if (world_rank == 0)
   // {
