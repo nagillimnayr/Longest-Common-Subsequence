@@ -31,8 +31,11 @@ public:
 
 int main(int argc, char *argv[])
 {
-  std::string sequence_a = "dpgcr";
-  std::string sequence_b = "dghrf";
+  // std::string sequence_a = "dpgcr";
+  // std::string sequence_b = "dghrf";
+
+  std::string sequence_a = "dlrkgcqiuyh";
+  std::string sequence_b = "drfghjkfdsz";
 
   LongestCommonSubsequenceSerial lcs(sequence_a, sequence_b);
   lcs.print();
