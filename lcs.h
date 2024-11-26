@@ -64,9 +64,6 @@ protected:
   // Traces through the matrix to reconstruct the longest common subsequence.
   void determineLongestCommonSubsequence()
   {
-
-    printf("determineLongestCommonSubsequence\n");
-
     // Start at the maximal entry, the bottom-right.
     int i = matrix_height - 1;
     int j = matrix_width - 1;
@@ -79,27 +76,13 @@ protected:
       i = std::max(i, 0);
       j = std::max(j, 0);
 
-      // if (i == 0 && j == 0)
-      // {
-      //   // longest_common_subsequence[0] = sequence_a[0];
-      //   break;
-      // }
-
       int current = matrix[i][j];
       int top, left, top_left;
       top = left = top_left = 0;
-      // if (i > 0 && j > 0)
-      // {
+
       top_left = matrix[i - 1][j - 1];
-      // }
-      // if (i > 0)
-      // {
       top = matrix[i - 1][j];
-      // }
-      // if (j > 0)
-      // {
       left = matrix[i][j - 1];
-      // }
 
       if (top_left == current)
       {
@@ -119,7 +102,6 @@ protected:
         i--;
         j--;
 
-        std::cout << longest_common_subsequence << std::endl;
         continue;
       }
 
@@ -156,12 +138,6 @@ public:
       matrix[i] = new int[matrix_width];
       // Fill leftmost column with 0s.
       matrix[i][0] = 0;
-
-      // for (int j = 0; j < matrix_width; j++)
-      // {
-      //   // Fill with 0s.
-      //   matrix[i][j] = 0;
-      // }
     }
     for (int j = 0; j < matrix_width; j++)
     {
@@ -188,6 +164,8 @@ public:
   // Print the matrix to the console.
   void printMatrix() const
   {
+    std::cout << "\n";
+
     /* Prints the matrix in the format:
      *      b1 b2 b3
      * a0 [ x  x  x ]
