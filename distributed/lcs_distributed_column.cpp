@@ -40,8 +40,8 @@
 class LCSDistributedColumn : public LongestCommonSubsequenceDistributed
 {
 protected:
-  int *local_matrix;
-  int *global_matrix;
+  int **local_matrix;
+  int **global_matrix;
 
   /* Need to keep track of this info globally for MPI_Gatherv(). */
   int *start_cols;
@@ -73,7 +73,7 @@ protected:
             MPI_COMM_WORLD,
             MPI_STATUS_IGNORE);
         // Store the value in the local matrix.
-        set(i, j - 1, comm_value);
+        matrix[i][j - 1] = comm_value;
       }
 
       computeCell(i, j);
@@ -84,7 +84,7 @@ protected:
       are done. Unless we are the rightmost process. */
       if (j == matrix_width - 1 && world_rank != world_size - 1)
       {
-        comm_value = get(i, j);
+        comm_value = matrix[i][j];
         MPI_Send(
             &comm_value,
             1,
@@ -104,26 +104,28 @@ protected:
   {
     printPerProcessMatrix();
 
-    int global_matrix_width = global_sequence_b.length();
+    int global_matrix_width = global_sequence_b.length() + 1;
 
     // Gather all of the data into the root process:
     if (world_rank == 0)
     {
-      /* Use local matrix to keep track of the processes' computed sub matrix. */
-      local_matrix = matrix;
+
+      printf("Copy main to local Complete!\n");
       // Allocate space for the combined matrix.
-      global_matrix = new int[matrix_height * global_matrix_width];
+      global_matrix = new int *[matrix_height];
+      for (int row = 0; row < matrix_height; row++)
+      {
+        global_matrix[row] = new int[global_matrix_width];
+        // Fill first column with zeros.
+        global_matrix[row][0] = 0;
+      }
       for (int col = 0; col < global_matrix_width; col++)
       {
         // Fill first row with zeros.
-        global_matrix[col] = 0;
-      }
-      for (int row = 1; row < matrix_height; row++)
-      {
-        // Fill first column with zeros.
-        global_matrix[row * global_matrix_width] = 0;
+        global_matrix[0][col] = 0;
       }
 
+      printf("Initialize global Complete!\n");
       /* Sub-matrices may be of different widths, and because the matrix is
       divided column-wise, passing the entire sub-matrix with MPI_Gather would
       not properly order the combined matrix.
@@ -136,10 +138,10 @@ protected:
       for (int row = 1; row < matrix_height; row++)
       {
         MPI_Gatherv(
-            &matrix[row * matrix_width + 1],
+            matrix[row] + 1,
             sub_str_widths[0],
             MPI_INT,
-            &global_matrix[row * global_matrix_width + 1],
+            global_matrix[row] + 1,
             sub_str_widths,
             start_cols,
             MPI_INT,
@@ -149,8 +151,12 @@ protected:
 
       sequence_b = global_sequence_b;
       length_b = sequence_b.length();
+      /* Use local matrix to keep track of the processes' computed sub matrix. */
+      local_matrix = matrix;
       matrix = global_matrix;
-      matrix_width = length_b + 1;
+      global_matrix = nullptr;
+      matrix_width = global_matrix_width;
+      max_length = std::min(length_a, length_b);
     }
     else
     {
@@ -158,7 +164,7 @@ protected:
       for (int row = 1; row < matrix_height; row++)
       {
         MPI_Gatherv(
-            matrix + (row * matrix_width) + 2,
+            matrix[row] + 1,
             sub_str_widths[world_rank],
             MPI_INT,
             nullptr,
@@ -183,10 +189,9 @@ protected:
 
     gather();
 
-    printPerProcessMatrix();
-
     if (world_rank == 0)
     {
+      printMatrix();
       determineLongestCommonSubsequence();
     }
   }
@@ -197,7 +202,7 @@ public:
       const std::string &sequence_b,
       const int world_size,
       const int world_rank,
-      const std::string global_sequence_b,
+      const std::string &global_sequence_b,
       int *start_cols,
       int *sub_str_widths)
       : LongestCommonSubsequenceDistributed(sequence_a, sequence_b, world_size, world_rank),
@@ -213,11 +218,21 @@ public:
   virtual ~LCSDistributedColumn()
   {
     if (global_matrix)
+    {
+      for (int row = 0; row < matrix_height; row++)
+      {
+        delete[] global_matrix[row];
+      }
       delete[] global_matrix;
+    }
     if (local_matrix)
+    {
+      for (int row = 0; row < matrix_height; row++)
+      {
+        delete[] local_matrix[row];
+      }
       delete[] local_matrix;
-    delete[] sub_str_widths;
-    delete[] start_cols;
+    }
   }
 
   void printPerProcessMatrix()
@@ -298,9 +313,6 @@ int main(int argc, char *argv[])
     MPI_Barrier(MPI_COMM_WORLD);
   }
 
-  /*--------------------------------------------------------------------------*/
-
-  // LCSDistributedColumn lcs(sequence_a, sequence_b, world_size, world_rank);
   LCSDistributedColumn lcs(
       sequence_a,
       local_sequence_b,
@@ -309,21 +321,16 @@ int main(int argc, char *argv[])
       sequence_b,
       start_cols,
       sub_str_widths);
-  // Print solution.
-  // if (world_rank == 0)
-  // {
-  //   lcs.print();
-  // }
 
-  // for (int rank = 0; rank < world_size; rank++)
-  // {
-  //   if (rank == world_rank)
-  //   {
-  //     std::cout << "\nRank: " << world_rank << "\n";
-  //     lcs.printMatrix();
-  //   }
-  //   MPI_Barrier(MPI_COMM_WORLD);
-  // }
+  // Print solution.
+  if (world_rank == 0)
+  {
+    lcs.print();
+  }
+
+  delete[] sub_str_widths;
+  delete[] start_cols;
+
   MPI_Finalize();
 
   return 0;
