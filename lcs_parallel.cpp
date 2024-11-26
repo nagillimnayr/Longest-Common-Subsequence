@@ -24,7 +24,7 @@
 class LongestCommonSubsequenceParallel : public LongestCommonSubsequence
 {
 private:
-  int numThreads;            // Numeber of threads used for multihreaded execution
+  int numThreads;            // Number of threads used for multihreaded execution
   std::barrier<> sync_point; // Barrier for thread synchronization after each
                              // diagonal computation chunk
 
@@ -83,7 +83,7 @@ private:
 public:
   LongestCommonSubsequenceParallel(const std::string &seqOne,
                                    const std::string &seqTwo, int n)
-      : LongestCommonSubsequence(seqOne, seqTwo), // Call base class constuctor
+      : LongestCommonSubsequence(seqOne, seqTwo), // Call base class constructor
         numThreads(n),                            // Set number of threads for parallel class
         sync_point(n)                             // Set amount of workers for barrier object
   {
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
   LongestCommonSubsequenceParallel lcs(seqOne, seqTwo, n);
 
   // Solve the LCS problem and print results (ie. Values and Matrix)
-  lcs.solve(); // Peform parallel LCS computation
+  lcs.solve(); // Perform parallel LCS computation
   lcs.print(); // Print resulting LCS and DP matrix
 
   return 0;
