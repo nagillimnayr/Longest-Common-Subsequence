@@ -9,13 +9,13 @@ ALL= $(SERIAL) $(PARALLEL) $(DISTRIBUTED)
 
 all : $(ALL)
 
-$(SERIAL): %: %.cpp
+$(SERIAL): %: %.cpp lcs.h 
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(PARALLEL): %: %.cpp
+$(PARALLEL): %: %.cpp lcs.h
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(DISTRIBUTED): %: %.cpp
+$(DISTRIBUTED): %: %.cpp lcs.h
 	$(MPICXX) $(CXXFLAGS) -o $@ $<
 
 .PHONY : clean
