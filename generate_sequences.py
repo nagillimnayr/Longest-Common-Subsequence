@@ -19,7 +19,7 @@ def generate_data_set(length):
     'sequence_a': [generate_sequence(length) for _ in range(n_sequences)],
     'sequence_b': [generate_sequence(length) for _ in range(n_sequences)]
   })
-  df.to_csv(f'data/random/sequences_{length}.csv', header=False, index=False)
+  df.to_csv(f'project/data/random/sequences_{length}.csv', header=False, index=False)
 
 def main():
   

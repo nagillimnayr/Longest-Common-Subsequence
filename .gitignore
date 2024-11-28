@@ -207,4 +207,8 @@ cython_debug/
 #.idea/
 
 # data/random/
-data/random/
+**/data/random/
+
+slurm.sh
+copy-to-slurm.sh
+copy-from-slurm.sh
