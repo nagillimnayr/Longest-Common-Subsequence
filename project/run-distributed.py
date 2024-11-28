@@ -39,6 +39,8 @@ def run_algo(sequence_a: str, sequence_b: str):
         time.sleep(30)
       
 def main():
+  subprocess.run(['make ', 'lcs_distributed'])
+  
   with open('data/random/sequences_10.csv') as csv_file:
     lines = csv_file.read().splitlines()
   
