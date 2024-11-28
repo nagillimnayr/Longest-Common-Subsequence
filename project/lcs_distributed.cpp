@@ -58,6 +58,9 @@ protected:
 
   std::string global_sequence_b;
 
+  Timer total_timer;
+  double total_time_taken = 0.0;
+
   /**
    * Returns the Indices of the starting cell of the diagonal.
    *
@@ -244,6 +247,7 @@ protected:
   virtual void solve() override
   {
     timer.start();
+    total_timer.start();
     /* Determine number of diagonals in sub-matrix. */
     int n_diagonals = length_b + length_a - 1;
     for (int diagonal = 0; diagonal < n_diagonals; diagonal++)
@@ -251,12 +255,13 @@ protected:
       computeDiagonal(diagonal);
     }
 
-    gather();
-
     time_taken = timer.stop();
+
+    gather();
 
     if (world_rank == 0)
     {
+      total_time_taken = total_timer.stop();
       determineLongestCommonSubsequence();
     }
   }
@@ -315,12 +320,20 @@ public:
     }
   }
 
-  void printTimeStats(int rank, double time)
+  void printTotalTime()
+  {
+    if (world_rank == 0)
+    {
+      printf("Total time taken: %lf\n", total_time_taken);
+    }
+  }
+
+  void printStats(int rank, double time)
   {
     if (world_rank != 0)
       return;
 
-    printf("%4d | %6d | %f\n",
+    printf("%4d | %6d | %lf\n",
            rank,
            sub_str_widths[rank],
            time);
@@ -331,7 +344,7 @@ public:
     if (world_rank == 0)
     {
       printf("\nrank | n_cols | time_taken\n");
-      printTimeStats(0, time_taken);
+      printStats(0, time_taken);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -360,7 +373,7 @@ public:
             0,
             MPI_COMM_WORLD,
             MPI_STATUS_IGNORE);
-        printTimeStats(rank, time);
+        printStats(rank, time);
       }
     }
   }
@@ -456,7 +469,7 @@ int main(int argc, char *argv[])
   lcs.print();
   if (world_rank == 0)
   {
-    printf("Total time taken: %f\n", total_time_taken);
+    lcs.printTotalTime();
   }
 
   delete[] sub_str_widths;
