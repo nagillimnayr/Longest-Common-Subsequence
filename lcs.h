@@ -2,6 +2,7 @@
 #define _LCS_H_
 #include <iostream>
 
+#include "timer.h"
 #include <algorithm> // std::max
 #include <iomanip>
 #include <string.h>
@@ -25,6 +26,11 @@ protected:
   int **matrix; /* Solution matrix - matrix[i][j] stores the length of
     the longest common subsequence of the first i-1 elements of sequence_a
     and the first j-1 elements of sequence_b. */
+
+  /* Simple custom timer for recording time intervals. */
+  Timer timer;
+  /* Total time taken (in seconds) to complete computation of the LCS. */
+  double time_taken = 0.0;
 
   /* The logic for computing individual entries of the matrix is the same
   regardless of which algorithm is being used. */
@@ -225,7 +231,7 @@ public:
     std::cout << "Longest common subsequence: " << longest_common_subsequence << "\n";
   }
 
-  void print()
+  virtual void print()
   {
     printMatrix();
     printInfo();
