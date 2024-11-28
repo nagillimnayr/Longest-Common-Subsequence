@@ -3,7 +3,7 @@ MPICXX = mpic++
 CXXFLAGS = -std=c++20 -O3 
 
 SERIAL= lcs_serial
-PARALLEL= lcs_parallel 
+PARALLEL= lcs_parallel_diagonal
 DISTRIBUTED= lcs_distributed
 ALL= $(SERIAL) $(PARALLEL) $(DISTRIBUTED)
 
