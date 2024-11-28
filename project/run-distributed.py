@@ -9,7 +9,7 @@ OUT_DIR="output/lcs_distributed"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 process_counts = [1, 2, 4, 8]
-n_runs = 10
+n_runs = 5
 
 def user_jobs_running():
     try:
@@ -23,7 +23,6 @@ def user_jobs_running():
 def run_algo(sequence_a: str, sequence_b: str):
   for n_processes in process_counts:
     for run in range(1, n_runs + 1):
-        
       outfile = f"distributed-p{n_processes}-r{run}.out"
       outfile_path = f"{OUT_DIR}/{outfile}"
       subprocess.run([
@@ -35,12 +34,9 @@ def run_algo(sequence_a: str, sequence_b: str):
         sequence_b  
       ])
       while (user_jobs_running() > 0):
-        print(f"Waiting for job ({outfile}) to finish...")
-        time.sleep(30)
+        time.sleep(5)
       
 def main():
-  subprocess.run(['make ', 'lcs_distributed'])
-  
   with open('data/random/sequences_10.csv') as csv_file:
     lines = csv_file.read().splitlines()
   

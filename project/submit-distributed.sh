@@ -6,9 +6,10 @@
 #SBATCH --time=10:00
 #SBATCH --partition=slow
 
+DIR=/home/rcm9/project
 EXE=lcs_distributed
 SEQ_A=$1
 SEQ_B=$2
 
 srun echo "----------------- LCS Distributed -----------------"
-srun "./${EXE} --sequence_a=${SEQ_A} --sequence_b=${SEQ_B}"
+srun "${DIR}/${EXE}" --sequence_a=$SEQ_A --sequence_b=$SEQ_B

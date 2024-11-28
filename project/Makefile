@@ -1,6 +1,7 @@
 CXX = g++
 MPICXX = mpic++
-CXXFLAGS = -std=c++20 -O3 
+CXXFLAGS = -std=c++14 -O3 
+CXXFLAGS_PARALLEL = -std=c++20 -O3 
 
 SERIAL= lcs_serial
 PARALLEL= lcs_parallel_diagonal
@@ -14,7 +15,7 @@ $(SERIAL): %: %.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
 $(PARALLEL): %: %.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) -o $@ $<
+	$(CXX) $(CXXFLAGS_PARALLEL) -o $@ $<
 
 $(DISTRIBUTED): %: %.cpp  $(HEADERS)
 	$(MPICXX) $(CXXFLAGS) -o $@ $<
