@@ -243,7 +243,7 @@ protected:
 
   virtual void solve() override
   {
-
+    timer.start();
     /* Determine number of diagonals in sub-matrix. */
     int n_diagonals = length_b + length_a - 1;
     for (int diagonal = 0; diagonal < n_diagonals; diagonal++)
@@ -252,6 +252,8 @@ protected:
     }
 
     gather();
+
+    time_taken = timer.stop();
 
     if (world_rank == 0)
     {
@@ -300,7 +302,7 @@ public:
     }
   }
 
-  void printPerProcessMatrix()
+  void printPerProcessMatrices()
   {
     for (int rank = 0; rank < world_size; rank++)
     {
@@ -312,12 +314,55 @@ public:
       MPI_Barrier(MPI_COMM_WORLD);
     }
   }
+
+  void printPerProcessStats()
+  {
+    if (world_rank == 0)
+    {
+      std::cout << std::setw(5) << "rank | n_cols | time_taken\n";
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    for (int rank = 0; rank < world_size; rank++)
+    {
+      if (rank == world_rank)
+      {
+        std::cout << std::setw(4) << world_rank << " | "
+                  << std::setw(6) << sub_str_widths[world_rank] << " | "
+                  << time_taken << "\n";
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+    if (world_rank == 0)
+    {
+      std::cout << std::endl;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+
+  virtual void print() override
+  {
+    if (world_rank == 0)
+    {
+      LongestCommonSubsequence::print();
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (world_rank == 0)
+    {
+      std::cout << std::endl;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    printPerProcessStats();
+  }
 };
 
 int main(int argc, char *argv[])
 {
   std::string sequence_a = "dlrkgcqiuyh";
   std::string sequence_b = "drfghjkfdsz";
+  Timer timer;
+  double total_time_taken = 0.0;
+  timer.start();
 
   MPI_Init(NULL, NULL);
 
@@ -369,10 +414,16 @@ int main(int argc, char *argv[])
       start_cols,
       sub_str_widths);
 
-  // Print solution.
   if (world_rank == 0)
   {
-    lcs.print();
+    total_time_taken = timer.stop();
+  }
+  // Print solution.
+  lcs.print();
+
+  if (world_rank == 0)
+  {
+    std::cout << "Total time taken: " << total_time_taken << std::endl;
   }
 
   delete[] sub_str_widths;
