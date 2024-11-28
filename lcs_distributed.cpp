@@ -101,23 +101,13 @@ protected:
     */
   Pair getDiagonalStart(int diagonal_index)
   {
-    // Determine where the starting element of the diagonal is.
-    int i, j;
     /* If the diagonal index is less than the width of the matrix, then the
     starting cell will be in the topmost row (i = 0) and the column will be
     equal to the index of the diagonal. */
-    if (diagonal_index < length_b)
-    {
-      i = 0;
-      j = diagonal_index;
-    }
+    int i = std::max(0, diagonal_index - length_b + 1);
     /* If the diagonal index is greater than or equal to the width of the
     matrix, then the starting cell will be in the rightmost column. */
-    else
-    {
-      i = diagonal_index - length_b + 1;
-      j = length_b - 1;
-    }
+    int j = std::min(diagonal_index, length_b - 1);
 
     // Adjust indices to account for the extra row and column of 0s.
     i++;
