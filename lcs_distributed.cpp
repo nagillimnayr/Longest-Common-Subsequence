@@ -315,29 +315,54 @@ public:
     }
   }
 
+  void printTimeStats(int rank, double time)
+  {
+    if (world_rank != 0)
+      return;
+
+    printf("%4d | %6d | %f\n",
+           rank,
+           sub_str_widths[rank],
+           time);
+  }
+
   void printPerProcessStats()
   {
     if (world_rank == 0)
     {
-      std::cout << std::setw(5) << "rank | n_cols | time_taken\n";
+      printf("\nrank | n_cols | time_taken\n");
+      printTimeStats(0, time_taken);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
 
-    for (int rank = 0; rank < world_size; rank++)
+    MPI_Barrier(MPI_COMM_WORLD);
+    /* Send stats to root process to ensure proper ordering of print statements. */
+    for (int rank = 1; rank < world_size; rank++)
     {
+
       if (rank == world_rank)
       {
-        std::cout << std::setw(4) << world_rank << " | "
-                  << std::setw(6) << sub_str_widths[world_rank] << " | "
-                  << time_taken << "\n";
+        MPI_Send(
+            &time_taken,
+            1,
+            MPI_DOUBLE,
+            0,
+            0,
+            MPI_COMM_WORLD);
       }
-      MPI_Barrier(MPI_COMM_WORLD);
+      else if (world_rank == 0)
+      {
+        double time;
+        MPI_Recv(
+            &time,
+            1,
+            MPI_DOUBLE,
+            rank,
+            0,
+            MPI_COMM_WORLD,
+            MPI_STATUS_IGNORE);
+        printTimeStats(rank, time);
+      }
     }
-    if (world_rank == 0)
-    {
-      std::cout << std::endl;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
   }
 
   virtual void print() override
@@ -347,22 +372,30 @@ public:
       LongestCommonSubsequence::print();
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    if (world_rank == 0)
-    {
-      std::cout << std::endl;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
     printPerProcessStats();
+    MPI_Barrier(MPI_COMM_WORLD);
   }
 };
 
 int main(int argc, char *argv[])
 {
-  std::string sequence_a = "dlrkgcqiuyh";
-  std::string sequence_b = "drfghjkfdsz";
-  Timer timer;
+  Timer total_timer;
   double total_time_taken = 0.0;
-  timer.start();
+  total_timer.start();
+
+  cxxopts::Options options("lcs_distributed",
+                           "Distributed LCS implementation using MPI.");
+
+  options.add_options(
+      "inputs",
+      {{"sequence_a", "First input sequence.", cxxopts::value<std::string>()},
+       {"sequence_b", "Second input sequence.",
+        cxxopts::value<std::string>()}});
+
+  auto command_options = options.parse(argc, argv);
+
+  std::string sequence_a = command_options["sequence_a"].as<std::string>();
+  std::string sequence_b = command_options["sequence_b"].as<std::string>();
 
   MPI_Init(NULL, NULL);
 
@@ -416,14 +449,14 @@ int main(int argc, char *argv[])
 
   if (world_rank == 0)
   {
-    total_time_taken = timer.stop();
+    total_time_taken = total_timer.stop();
   }
   // Print solution.
-  lcs.print();
 
+  lcs.print();
   if (world_rank == 0)
   {
-    std::cout << "Total time taken: " << total_time_taken << std::endl;
+    printf("Total time taken: %f\n", total_time_taken);
   }
 
   delete[] sub_str_widths;
