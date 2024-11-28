@@ -2,7 +2,6 @@
 #define _TIMER_H
 
 #include <chrono>
-using namespace std::chrono;
 
 /**
  * @brief Very simple class for recording execution time.
@@ -14,7 +13,7 @@ using namespace std::chrono;
 class Timer
 {
 private:
-  duration<double> start_time;
+  std::chrono::duration<double> start_time;
 
 public:
   Timer()
@@ -24,14 +23,14 @@ public:
   /** Starts the timer. */
   void start()
   {
-    start_time = steady_clock::now().time_since_epoch();
+    start_time = std::chrono::steady_clock::now().time_since_epoch();
   }
 
   /** Returns the time since the last call to `start()` in seconds. */
   double stop()
   {
-    duration<double> time = steady_clock::now().time_since_epoch();
-    duration<double> time_difference = time - start_time;
+    std::chrono::duration<double> time = std::chrono::steady_clock::now().time_since_epoch();
+    std::chrono::duration<double> time_difference = time - start_time;
     return time_difference.count();
   }
 };
