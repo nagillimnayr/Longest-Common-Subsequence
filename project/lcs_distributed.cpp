@@ -1,8 +1,8 @@
-#include "cxxopts.hpp"
 #include <algorithm> // std::max, std::min
 #include <iostream>
 #include <mpi.h>
 
+#include "cxxopts.hpp"
 #include "lcs.h"
 
 /**
