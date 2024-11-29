@@ -22,7 +22,7 @@ def record_parallel():
   
 def record_distributed():
   os.makedirs(f'{OUT_DIR}/distributed', exist_ok=True)
-  in_dir="project/output/distributed"
+  in_dir="output/distributed"
   sequence_lengths = [100, 1000, 10000]
   process_counts = [1, 2, 4, 8]
   n_runs = 8
