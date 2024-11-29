@@ -35,8 +35,6 @@ lcs_serial
 lcs_parallel
 lcs_distributed
 
-distributed/
-
 lcs_parallel_diagonal
 
 run.sh
