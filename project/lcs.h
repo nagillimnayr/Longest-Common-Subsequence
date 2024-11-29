@@ -229,12 +229,23 @@ public:
     std::cout << std::endl;
   }
 
-  void printInfo()
+  void printLCS()
   {
+    determineLongestCommonSubsequence();
     std::cout << "Sequence A: " << sequence_a << "\n";
     std::cout << "Sequence B: " << sequence_b << "\n";
-    std::cout << "Length of the longest common subsequence: " << getLongestSubsequenceLength() << "\n";
     std::cout << "Longest common subsequence: " << longest_common_subsequence << "\n";
+  }
+
+  void printLCSLength()
+  {
+    std::cout << "Length of the longest common subsequence: " << getLongestSubsequenceLength() << "\n";
+  }
+
+  void printInfo()
+  {
+    printLCS();
+    printLCSLength();
   }
 
   virtual void print()
