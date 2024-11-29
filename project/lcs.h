@@ -7,6 +7,12 @@
 #include <iomanip>
 #include <string.h>
 
+struct Pair
+{
+  int first;
+  int second;
+};
+
 /** Abstract Base class for LCS implementations */
 class LongestCommonSubsequence
 {

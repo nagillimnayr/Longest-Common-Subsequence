@@ -5,12 +5,6 @@
 
 #include "lcs.h"
 
-struct Pair
-{
-  int first;
-  int second;
-};
-
 /**
  * Distributed LCS. This version divides the score matrix into blocks of
  * columns and assigns each block to a process.
@@ -382,7 +376,7 @@ public:
   {
     if (world_rank == 0)
     {
-      LongestCommonSubsequence::print();
+      printInfo();
     }
     MPI_Barrier(MPI_COMM_WORLD);
     printPerProcessStats();
