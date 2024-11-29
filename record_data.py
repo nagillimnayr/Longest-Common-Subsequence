@@ -38,7 +38,7 @@ def record_serial():
     })
     print(df)
     out_path = f"{out_dir}/distributed-L{sequence_length}.csv"
-    df.to_csv(out_path)
+    df.to_csv(out_path, index=False)
   
 def record_parallel():
   algo = 'parallel'
@@ -70,7 +70,7 @@ def record_parallel():
     })
     print(df)
     out_path = f"{out_dir}/distributed-L{sequence_length}.csv"
-    df.to_csv(out_path)
+    df.to_csv(out_path, index=False)
         
 def record_distributed():
   algo = 'distributed'
@@ -104,7 +104,7 @@ def record_distributed():
     })
     print(df)
     out_path = f"{out_dir}/distributed-L{sequence_length}.csv"
-    df.to_csv(out_path)
+    df.to_csv(out_path, index=False)
     
   
 
