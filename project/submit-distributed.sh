@@ -11,5 +11,4 @@ EXE=lcs_distributed
 SEQ_A=$1
 SEQ_B=$2
 
-srun echo "----------------- LCS Distributed -----------------"
 srun "${DIR}/${EXE}" --sequence_a=$SEQ_A --sequence_b=$SEQ_B

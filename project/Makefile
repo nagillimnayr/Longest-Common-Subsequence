@@ -17,7 +17,7 @@ $(SERIAL): %: %.cpp $(HEADERS)
 $(PARALLEL): %: %.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS_PARALLEL) -o $@ $<
 
-$(DISTRIBUTED): %: %.cpp  $(HEADERS)
+$(DISTRIBUTED): %: %.cpp $(HEADERS)
 	$(MPICXX) $(CXXFLAGS) -o $@ $<
 
 .PHONY : clean

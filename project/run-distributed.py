@@ -5,10 +5,11 @@ import subprocess
 
 USER_ID = "rcm9"
 
-OUT_DIR="output/lcs_distributed"
+OUT_DIR="output/distributed"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 process_counts = [1, 2, 4, 8]
+sequence_lengths = [100, 1000, 10000]
 n_runs = 8
 
 def user_jobs_running():
@@ -19,32 +20,36 @@ def user_jobs_running():
     except subprocess.CalledProcessError as e:
         print(f"Error checking jobs: {e}")
         exit(1)
+        
+def get_sequences(sequence_length):
+    with open(f'data/random/sequences_L{sequence_length}.csv') as csv_file:
+      lines = csv_file.read().splitlines()
+    sequences = lines[0].split(sep=',')
+    sequences = [s.strip() for s in sequences]
+    return sequences
 
-def run_algo(sequence_a: str, sequence_b: str):
-  for n_processes in process_counts:
-    for run in range(1, n_runs + 1):
-      outfile = f"distributed-p{n_processes}-r{run}.out"
-      outfile_path = f"{OUT_DIR}/{outfile}"
-      subprocess.run([
-        'sbatch', 
-        f'--output={outfile_path}', 
-        f'--ntasks={n_processes}', 
-        'submit-distributed.sh',
-        sequence_a,
-        sequence_b  
-      ])
-      while (user_jobs_running() > 0):
-        time.sleep(5)
+def run_algo():
+  for sequence_length in sequence_lengths:
+    out_dir = f"{OUT_DIR}/L{sequence_length}"
+    os.makedirs(out_dir, exist_ok=True)
+    sequence_a, sequence_b = get_sequences(sequence_length)
+    for n_processes in process_counts:
+      for run in range(1, n_runs + 1):
+        outfile = f"distributed-L{sequence_length}-P{n_processes}-R{run}.out"
+        outfile_path = f"{out_dir}/{outfile}"
+        subprocess.run([
+          'sbatch', 
+          f'--output={outfile_path}', 
+          f'--ntasks={n_processes}', 
+          'submit-distributed.sh',
+          sequence_a,
+          sequence_b  
+        ])
+        while (user_jobs_running() > 0):
+          time.sleep(3)
       
 def main():
-  with open('data/random/sequences_10.csv') as csv_file:
-    lines = csv_file.read().splitlines()
-  
-  sequences = lines[0].split(sep=',')
-  sequences = [s.strip() for s in sequences]
-  sequence_a, sequence_b = sequences
-  print(sequence_a, ', ', sequence_b, sep='')
-  run_algo(sequence_a, sequence_b)
+  run_algo()
   
 if __name__ == '__main__':
   main()
