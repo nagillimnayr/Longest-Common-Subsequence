@@ -24,7 +24,7 @@
 class LongestCommonSubsequenceParallel : public LongestCommonSubsequence
 {
 private:
-  int numThreads;            // Number of threads used for multihreaded execution
+  int numThreads;            // Number of threads used for multithreaded execution
   std::barrier<> sync_point; // Barrier for thread synchronization after each
                              // diagonal computation chunk
 
