@@ -417,6 +417,13 @@ int main(int argc, char *argv[])
   int world_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
+  if (world_rank == 0)
+  {
+    printf("-------------------- LCS Distributed --------------------\n");
+    printf("n_processes: %d\n\n", world_size);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+
   int length_a = sequence_a.length();
   int length_b = sequence_b.length();
 
