@@ -99,24 +99,26 @@ int main(int argc, char *argv[])
 {
   // Create command line options objects
   cxxopts::Options options("lcs_parallel",
-                           "lcs program for cmpt 431 project using threads");
+                           "Parallel LCS implementation using C++ threads.");
 
   options.add_options("inputs",
-                      {{"nThreads", "Number of threads for the program",
+                      {{"n_threads", "Number of threads for the program.",
                         cxxopts::value<int>()->default_value("1")},
-                       {"sequenceFile1", "Number of threads for the program",
-                        cxxopts::value<std::string>()},
-                       {"sequenceFile2", "Number of threads for the program",
+                       {"sequence_a", "First input sequence.", cxxopts::value<std::string>()},
+                       {"sequence_b", "Second input sequence.",
                         cxxopts::value<std::string>()}});
 
   // Variables to hold command line values parsed from the command_options
   auto command_options = options.parse(argc, argv);
-  int n = command_options["nThreads"].as<int>();
-  std::string seqOne = command_options["sequenceFile1"].as<std::string>();
-  std::string seqTwo = command_options["sequenceFile2"].as<std::string>();
+  int n_threads = command_options["n_threads"].as<int>();
+  std::string sequence_a = command_options["sequence_a"].as<std::string>();
+  std::string sequence_b = command_options["sequence_b"].as<std::string>();
+
+  printf("-------------------- LCS Parallel --------------------\n");
+  printf("n_threads: %d\n", n_threads);
 
   // Create instance of the Parallel LCS solver class
-  LongestCommonSubsequenceParallel lcs(seqOne, seqTwo, n);
+  LongestCommonSubsequenceParallel lcs(sequence_a, sequence_b, n_threads);
 
   // Solve the LCS problem and print results (ie. Values and Matrix)
   lcs.solve(); // Perform parallel LCS computation
