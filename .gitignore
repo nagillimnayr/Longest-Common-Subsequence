@@ -206,9 +206,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# data/random/
-**/data/random/
-
 slurm.sh
 copy-to-slurm.sh
 copy-from-slurm.sh
