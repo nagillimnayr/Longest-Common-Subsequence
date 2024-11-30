@@ -42,7 +42,8 @@ def main():
           f'--output={outfile_path}', 
           f'submit-{ALGO}.sh',
           sequence_a,
-          sequence_b  
+          sequence_b,
+          str(n_threads)  
         ])
         while (user_jobs_running() > 0):
           time.sleep(3)
