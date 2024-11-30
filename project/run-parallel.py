@@ -5,7 +5,7 @@ import subprocess
 
 USER_ID = "rcm9"
 ALGO = "parallel"
-OUT_DIR ="output/distributed"
+OUT_DIR =f"output/{ALGO}"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 thread_counts = [1, 2, 4, 8]

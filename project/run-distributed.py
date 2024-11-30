@@ -5,7 +5,7 @@ import subprocess
 
 USER_ID = "rcm9"
 ALGO = "distributed"
-OUT_DIR ="output/distributed"
+OUT_DIR =f"output/{ALGO}"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 process_counts = [1, 2, 4, 8]
