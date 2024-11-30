@@ -1,6 +1,7 @@
 CXX = g++
 MPICXX = mpic++
-CXXFLAGS = -std=c++14 -O3 
+CXXFLAGS = -std=c++14 -pthread -O3 
+LDFLAGS = -Llib -lalloc431 -lpthread
 
 SERIAL= lcs_serial
 PARALLEL= lcs_parallel
@@ -13,19 +14,19 @@ ALL= $(SERIAL) $(PARALLEL) $(DISTRIBUTED)
 all : $(ALL)
 
 $(SERIAL): %: %.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) -o $@ $<
+	$(CXX) $(CXXFLAGS) -o $(LDFLAGS) $@ $<
 
 $(PARALLEL): %: %.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) -o $@ $<
+	$(CXX) $(CXXFLAGS) -o $(LDFLAGS) $@ $<
 
 $(DISTRIBUTED): %: distributed/%.cpp $(HEADERS) distributed/lcs_distributed.h
-	$(MPICXX) $(CXXFLAGS) -o $@ $<
+	$(MPICXX) $(CXXFLAGS) -o $(LDFLAGS) $@ $<
 
 $(DISTRIBUTED_LEN): %: distributed/%.cpp $(HEADERS) distributed/lcs_distributed.h
-	$(MPICXX) $(CXXFLAGS) -o $@ $<
+	$(MPICXX) $(CXXFLAGS) -o $(LDFLAGS) $@ $<
 
 $(DISTRIBUTED_GATHER): %: distributed/%.cpp $(HEADERS) distributed/lcs_distributed.h
-	$(MPICXX) $(CXXFLAGS) -o $@ $<
+	$(MPICXX) $(CXXFLAGS) -o $(LDFLAGS) $@ $<
 
 .PHONY : clean
 
