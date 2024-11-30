@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
   // lcs.print();
   // printf("\n");
   lcs.printThreadStats();
-  printf("Total Time Taken: %lf\n", total_time_taken);
+  printf("Total time taken: %lf\n", total_time_taken);
 
   return 0;
 }
