@@ -7,7 +7,7 @@ pd.options.mode.copy_on_write = True
 
 os.makedirs('data/random', exist_ok=True)
 
-lengths = [10, 100, 1000, 10000]
+lengths = [100, 1000, 10000, 100000]
 
 n_sequences = 10
 

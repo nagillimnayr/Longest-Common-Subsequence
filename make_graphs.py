@@ -5,7 +5,7 @@ import os
 
 os.makedirs('graphs', exist_ok=True)
 
-lengths = [100, 1000, 10000]
+lengths = [100, 1000, 10000, 100000]
 
 def make_serial_graphs():
   algo = 'serial'

@@ -8,7 +8,7 @@ ALGO = "serial"
 OUT_DIR =f"output/{ALGO}"
 os.makedirs(OUT_DIR, exist_ok=True)
 
-sequence_lengths = [100, 1000, 10000]
+sequence_lengths = [100, 1000, 10000, 100000]
 n_runs = 8
 
 def user_jobs_running():

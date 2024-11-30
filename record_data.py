@@ -10,7 +10,7 @@ pd.options.mode.copy_on_write = True
 
 OUT_DIR = 'data'
 
-sequence_lengths = [100, 1000, 10000]
+sequence_lengths = [100, 1000, 10000, 100000]
 n_runs = 8
 
 def record_serial():
@@ -109,7 +109,7 @@ def record_distributed():
 
 def main():
   record_serial()
-  # record_parallel()
+  record_parallel()
   record_distributed()
 
 if __name__ == '__main__':
