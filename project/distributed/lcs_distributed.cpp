@@ -191,7 +191,7 @@ public:
   virtual void printInfo() override
   {
     printLCSLength();
-    std::cout << "Longest common subsequence: " << longest_common_subsequence << "\n";
+    // std::cout << "Longest common subsequence: " << longest_common_subsequence << "\n";
   }
 };
 
