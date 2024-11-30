@@ -34,6 +34,11 @@ public:
   virtual void print() override
   {
     printInfo();
+    printTimeTaken();
+  }
+
+  void printTimeTaken()
+  {
     printf("Total time taken: %lf\n", time_taken);
   }
 };
@@ -58,6 +63,7 @@ int main(int argc, char *argv[])
   printf("-------------------- LCS Serial --------------------\n");
 
   LongestCommonSubsequenceSerial lcs(sequence_a, sequence_b);
-  lcs.print();
+  lcs.printLCSLength();
+  lcs.printTimeTaken();
   return 0;
 }
