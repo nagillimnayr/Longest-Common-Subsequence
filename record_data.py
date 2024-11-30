@@ -64,13 +64,13 @@ def record_parallel():
         
       avg_execution_time = execution_time / float(n_runs)  
       avg_execution_times.append(avg_execution_time)
+
     df = pd.DataFrame({
-      'n_threads': thread_counts,
       'avg_execution_time': avg_execution_times
-    })
+    }, index=thread_counts)
     print(df)
     out_path = f"{out_dir}/{algo}-L{sequence_length}.csv"
-    df.to_csv(out_path, index=False)
+    df.to_csv(out_path, index_label='n_threads')
         
 def record_distributed():
   algo = 'distributed'
@@ -99,12 +99,11 @@ def record_distributed():
       avg_execution_times.append(avg_execution_time)
     
     df = pd.DataFrame({
-      'n_processes': process_counts,
       'avg_execution_time': avg_execution_times
-    })
+    }, index=process_counts)
     print(df)
     out_path = f"{out_dir}/{algo}-L{sequence_length}.csv"
-    df.to_csv(out_path, index=False)
+    df.to_csv(out_path, index_label='n_processes')
     
   
 
