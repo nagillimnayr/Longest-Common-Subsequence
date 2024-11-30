@@ -35,7 +35,7 @@ def main():
     sequence_a, sequence_b = get_sequences(sequence_length)
     for n_processes in process_counts:
       for run in range(1, n_runs + 1):
-        outfile = f"{ALGO}-L{sequence_length}-P{n_processes}-R{run}.out"
+        outfile = f"{ALGO}-L{sequence_length}-T{n_processes}-R{run}.out"
         outfile_path = f"{out_dir}/{outfile}"
         subprocess.run([
           'sbatch', 
