@@ -37,7 +37,7 @@ def record_serial():
       'avg_execution_time': [avg_execution_time]
     })
     print(df)
-    out_path = f"{out_dir}/distributed-L{sequence_length}.csv"
+    out_path = f"{out_dir}/{algo}-L{sequence_length}.csv"
     df.to_csv(out_path, index=False)
   
 def record_parallel():
@@ -69,7 +69,7 @@ def record_parallel():
       'avg_execution_time': avg_execution_times
     })
     print(df)
-    out_path = f"{out_dir}/distributed-L{sequence_length}.csv"
+    out_path = f"{out_dir}/{algo}-L{sequence_length}.csv"
     df.to_csv(out_path, index=False)
         
 def record_distributed():
@@ -103,7 +103,7 @@ def record_distributed():
       'avg_execution_time': avg_execution_times
     })
     print(df)
-    out_path = f"{out_dir}/distributed-L{sequence_length}.csv"
+    out_path = f"{out_dir}/{algo}-L{sequence_length}.csv"
     df.to_csv(out_path, index=False)
     
   
