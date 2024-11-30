@@ -15,98 +15,6 @@ sequence_lengths = [100, 1000, 10000]
 task_counts = [1, 2, 4, 8]
 n_runs = 8
 
-def record_serial():
-  algo = 'serial'
-  os.makedirs(f'{OUT_DIR}/{algo}', exist_ok=True)
-  in_dir = f"output/{algo}"
-  for sequence_length in sequence_lengths:
-    out_dir = f'{OUT_DIR}/{algo}/L{sequence_length}'
-    os.makedirs(out_dir, exist_ok=True)
-    execution_time = 0.0
-    for run in range(1, n_runs + 1):
-        file_name = f"{algo}-L{sequence_length}-R{run}.out"
-        input_path = f"{in_dir}/L{sequence_length}/{file_name}"
-        with open(input_path, 'r') as in_file:
-          text = in_file.read()
-        pattern = r'(?<=Total time taken:)\s*(\d*[\.]?\d*)'
-        match = re.search(pattern, text)
-        if match is None:
-          raise ValueError(f"ERROR: Could not extract execution time for {file_name}")
-        execution_time += float(match.group(1))
-    
-    avg_execution_time = execution_time / float(n_runs)
-    df = pd.DataFrame({
-      'avg_execution_time': [avg_execution_time]
-    })
-    print(df)
-    out_path = f"{out_dir}/{algo}-L{sequence_length}.csv"
-    df.to_csv(out_path, index=False)
-  
-def record_parallel():
-  algo = 'parallel'
-  os.makedirs(f'{OUT_DIR}/{algo}', exist_ok=True)
-  in_dir = f"output/{algo}"
-  thread_counts = [1, 2, 4, 8]
-  for sequence_length in sequence_lengths:
-    out_dir = f'{OUT_DIR}/{algo}/L{sequence_length}'
-    os.makedirs(out_dir, exist_ok=True)
-    avg_execution_times: list[float] = []
-    for n_threads in thread_counts:
-      execution_time = 0.0
-      for run in range(1, n_runs + 1):
-        file_name = f"{algo}-L{sequence_length}-T{n_threads}-R{run}.out"
-        input_path = f"{in_dir}/L{sequence_length}/{file_name}"
-        with open(input_path, 'r') as in_file:
-          text = in_file.read()
-        pattern = r'(?<=Total time taken:)\s*(\d*[\.]?\d*)'
-        match = re.search(pattern, text)
-        if match is None:
-          raise ValueError(f"ERROR: Could not extract execution time for {file_name}")
-        execution_time += float(match.group(1))
-        
-      avg_execution_time = execution_time / float(n_runs)  
-      avg_execution_times.append(avg_execution_time)
-
-    df = pd.DataFrame({
-      'avg_execution_time': avg_execution_times
-    }, index=thread_counts)
-    print(df)
-    out_path = f"{out_dir}/{algo}-L{sequence_length}.csv"
-    df.to_csv(out_path, index_label='n_threads')
-        
-def record_distributed():
-  algo = 'distributed'
-  os.makedirs(f'{OUT_DIR}/{algo}', exist_ok=True)
-  in_dir = f"output/{algo}"
-  process_counts = [1, 2, 4, 8]
-  for sequence_length in sequence_lengths:
-    out_dir = f'{OUT_DIR}/{algo}/L{sequence_length}'
-    os.makedirs(out_dir, exist_ok=True)
-    avg_execution_times: list[float] = []
-    for n_processes in process_counts:
-      execution_time = 0.0
-      
-      for run in range(1, n_runs + 1):
-        file_name = f"{algo}-L{sequence_length}-T{n_processes}-R{run}.out"
-        input_path = f"{in_dir}/L{sequence_length}/{file_name}"
-        with open(input_path, 'r') as in_file:
-          text = in_file.read()
-        pattern = r'(?<=Total time taken:)\s*(\d*[\.]?\d*)'
-        match = re.search(pattern, text)
-        if match is None:
-          raise ValueError(f"ERROR: Could not extract execution time for {file_name}")
-        execution_time += float(match.group(1))
-      
-      avg_execution_time = execution_time / float(n_runs)  
-      avg_execution_times.append(avg_execution_time)
-    
-    df = pd.DataFrame({
-      'avg_execution_time': avg_execution_times
-    }, index=process_counts)
-    print(df)
-    out_path = f"{out_dir}/{algo}-L{sequence_length}.csv"
-    df.to_csv(out_path, index_label='n_processes')
-    
 def get_serial_avg_time(length: int):
   in_dir = f"output/serial/L{length}"
   execution_time = 0.0
@@ -151,7 +59,7 @@ def record(length: int):
       'distributed': distributed_execution_times,
       'serial': [serial_execution_time] * 4
     }, index=task_counts)
-    df.to_csv(f'{OUT_DIR}/L{length}', index_label='n_tasks')
+    df.to_csv(f'{OUT_DIR}/L{length}.csv', index_label='n_tasks')
       
 
     
