@@ -9,57 +9,26 @@ ALGOS = ['serial', 'parallel', 'distributed']
 
 lengths = [100, 1000, 10000]
 
-def make_df(algo: str, length: int):
-  in_file = f'data/{algo}/L{length}/{algo}-L{length}.csv'
+def make_df(length: int):
+  in_file = f'data/L{length}.csv'
   return pd.read_csv(in_file, index_col=0)
   
 
 def make_graph(length: int):
-  serial_df = make_df('serial', length)
-  parallel_df = make_df('parallel', length)
+  df = make_df(length)
+  print(df)
+  ax = df.plot()
+  ax.set_title(f'LCS - {length} x {length}')
+  ax.set_xlabel('Number of tasks (threads/ processes)')
+  ax.set_ylabel('Average Execution Time (s)')
+  plt.grid(axis='both', linestyle='--')
+  out_file = f'graphs/L{length}.png'
+  plt.savefig(out_file)
+  plt.xticks([1, 2, 4, 8])
   
-
-def make_serial_graphs():
-  algo = 'serial'
-  for length in lengths:
-    in_file = f'data/{algo}/L{length}/{algo}-L{length}.csv'
-    df = pd.read_csv(in_file, index_col=0)
-    print(df)
-    ax = df.plot()
-    ax.set_title(f'LCS {algo.title()} - L{length}')
-    out_file = f'graphs/{algo}-L{length}.png'
-    plt.savefig(out_file)
-    
-
-def make_parallel_graphs():
-  algo = 'parallel'
-  for length in lengths:
-    in_file = f'data/{algo}/L{length}/{algo}-L{length}.csv'
-    df = pd.read_csv(in_file, index_col=0)
-    print(df)
-    ax = df.plot()
-    ax.set_title(f'LCS {algo.title()} - L{length}')
-    ax.set_xlabel('Number of threads')
-    ax.set_ylabel('Avg. execution time (s)')
-    out_file = f'graphs/{algo}-L{length}.png'
-    plt.savefig(out_file)
-
-def make_distributed_graphs():
-  algo = 'distributed'
-  for length in lengths:
-    in_file = f'data/{algo}/L{length}/{algo}-L{length}.csv'
-    df = pd.read_csv(in_file, index_col=0)
-    print(df)
-    ax = df.plot()
-    ax.set_title(f'LCS {algo.title()} - L{length}')
-    ax.set_xlabel('Number of processes')
-    ax.set_ylabel('Avg. execution time (s)')
-    out_file = f'graphs/{algo}-L{length}.png'
-    plt.savefig(out_file)
-
 def main():
-  # make_serial_graphs()
-  make_distributed_graphs()
+  for length in lengths:
+    make_graph(length)
   
 if __name__ == '__main__':
   main()
