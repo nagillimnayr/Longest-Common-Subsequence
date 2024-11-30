@@ -112,7 +112,7 @@ def get_serial_avg_time(length: int):
   execution_time = 0.0
   for run in range(1, n_runs + 1):
     file_name = f"serial-L{length}-R{run}.out"
-    input_path = f"{in_dir}/L{length}/{file_name}"
+    input_path = f"{in_dir}/{file_name}"
     with open(input_path, 'r') as in_file:
       text = in_file.read()
     pattern = r'(?<=Total time taken:)\s*(\d*[\.]?\d*)'
@@ -127,7 +127,7 @@ def get_avg_execution_time(algo: str, length: int,  n_tasks: int):
   execution_time = 0.0
   for run in range(1, n_runs + 1):
     file_name = f"{algo}-L{length}-T{n_tasks}-R{run}.out"
-    input_path = f"{in_dir}/L{length}/{file_name}"
+    input_path = f"{in_dir}/{file_name}"
     with open(input_path, 'r') as in_file:
       text = in_file.read()
     pattern = r'(?<=Total time taken:)\s*(\d*[\.]?\d*)'
