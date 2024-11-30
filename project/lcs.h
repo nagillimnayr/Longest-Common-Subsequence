@@ -40,41 +40,41 @@ protected:
 
   /* The logic for computing individual entries of the matrix is the same
   regardless of which algorithm is being used. */
-  virtual void computeCell(const int i, const int j)
+  virtual void computeCell(const int row, const int col)
   {
     /* Adjust the indices when accessing sequences, to account for extra row and
     column of 0s. in the matrix. */
     /* If characters are the same, set the entry to
         1 + the entry diagonally to the top left. */
-    if (sequence_a[i - 1] == sequence_b[j - 1])
+    if (sequence_a[row - 1] == sequence_b[col - 1])
     {
       /* If i is 0 then we are in the top row,
       if j is 0 then we are in the leftmost column,
       either way, there is no entry diagonally to the top left, so treat it as 0. */
       int top_left = 0;
-      if (i > 0 && j > 0)
+      if (row > 0 && col > 0)
       {
-        top_left = matrix[i - 1][j - 1];
+        top_left = matrix[row - 1][col - 1];
       }
-      matrix[i][j] = top_left + 1;
+      matrix[row][col] = top_left + 1;
       return;
     }
     /* If characters are not the same, set entry to the higher of either the entry directly above or the entry directly to the left. */
     int top, left;
     top = left = 0;
-    if (i > 0)
+    if (row > 0)
     {
-      top = matrix[i - 1][j];
+      top = matrix[row - 1][col];
     }
-    if (j > 0)
+    if (col > 0)
     {
-      left = matrix[i][j - 1];
+      left = matrix[row][col - 1];
     }
-    matrix[i][j] = std::max(top, left);
+    matrix[row][col] = std::max(top, left);
   }
 
   // Traces through the matrix to reconstruct the longest common subsequence.
-  void determineLongestCommonSubsequence()
+  virtual void determineLongestCommonSubsequence()
   {
     // Start at the maximal entry, the bottom-right.
     int i = matrix_height - 1;
@@ -88,7 +88,7 @@ protected:
       i = std::max(i, 0);
       j = std::max(j, 0);
 
-      int current = matrix[i][j];
+      current = matrix[i][j];
       int top, left, top_left;
       top = left = top_left = 0;
 
@@ -168,13 +168,13 @@ public:
   }
 
   // Returns the length of the longest common subsequence.
-  int getLongestSubsequenceLength() const
+  virtual int getLongestSubsequenceLength()
   {
     return matrix[matrix_height - 1][matrix_width - 1];
   }
 
   // Print the matrix to the console.
-  void printMatrix() const
+  void printMatrix()
   {
     std::cout << "\n";
 
@@ -229,20 +229,19 @@ public:
     std::cout << std::endl;
   }
 
-  void printLCS()
+  virtual void printLCS()
   {
-    determineLongestCommonSubsequence();
     std::cout << "Sequence A: " << sequence_a << "\n";
     std::cout << "Sequence B: " << sequence_b << "\n";
     std::cout << "Longest common subsequence: " << longest_common_subsequence << "\n";
   }
 
-  void printLCSLength()
+  virtual void printLCSLength()
   {
     std::cout << "Length of the longest common subsequence: " << getLongestSubsequenceLength() << "\n";
   }
 
-  void printInfo()
+  virtual void printInfo()
   {
     printLCS();
     printLCSLength();

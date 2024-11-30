@@ -140,7 +140,6 @@ protected:
       }
 
       computeCell(i, j);
-      // matrix[i][j] = ++count;
 
       /* If we are computing a cell in the rightmost column of our local
       matrix, we must send the results to our neighbor to the right once we
