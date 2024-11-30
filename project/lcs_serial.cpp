@@ -16,8 +16,8 @@ private:
         computeCell(i, j);
       }
     }
-    time_taken = timer.stop();
     determineLongestCommonSubsequence();
+    time_taken = timer.stop();
   }
 
 public:

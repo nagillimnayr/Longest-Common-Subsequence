@@ -4,11 +4,11 @@ import time
 import subprocess
 
 USER_ID = "rcm9"
-ALGO = "distributed"
+ALGO = "parallel"
 OUT_DIR ="output/distributed"
 os.makedirs(OUT_DIR, exist_ok=True)
 
-process_counts = [1, 2, 4, 8]
+thread_counts = [1, 2, 4, 8]
 sequence_lengths = [100, 1000, 10000]
 n_runs = 8
 
@@ -33,14 +33,13 @@ def main():
     out_dir = f"{OUT_DIR}/L{sequence_length}"
     os.makedirs(out_dir, exist_ok=True)
     sequence_a, sequence_b = get_sequences(sequence_length)
-    for n_processes in process_counts:
+    for n_threads in thread_counts:
       for run in range(1, n_runs + 1):
-        outfile = f"{ALGO}-L{sequence_length}-P{n_processes}-R{run}.out"
+        outfile = f"{ALGO}-L{sequence_length}-T{n_threads}-R{run}.out"
         outfile_path = f"{out_dir}/{outfile}"
         subprocess.run([
           'sbatch', 
           f'--output={outfile_path}', 
-          f'--ntasks={n_processes}', 
           f'submit-{ALGO}.sh',
           sequence_a,
           sequence_b  
