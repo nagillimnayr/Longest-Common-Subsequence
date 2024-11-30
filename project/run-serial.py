@@ -5,7 +5,7 @@ import subprocess
 
 USER_ID = "rcm9"
 ALGO = "serial"
-OUT_DIR =f"output/{ALGO}"
+OUT_DIR = f"output/{ALGO}"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 sequence_lengths = [100, 1000, 10000]
