@@ -5,7 +5,19 @@ import os
 
 os.makedirs('graphs', exist_ok=True)
 
-lengths = [100, 1000, 10000, 100000]
+ALGOS = ['serial', 'parallel', 'distributed']
+
+lengths = [100, 1000, 10000]
+
+def make_df(algo: str, length: int):
+  in_file = f'data/{algo}/L{length}/{algo}-L{length}.csv'
+  return pd.read_csv(in_file, index_col=0)
+  
+
+def make_graph(length: int):
+  serial_df = make_df('serial', length)
+  parallel_df = make_df('parallel', length)
+  
 
 def make_serial_graphs():
   algo = 'serial'

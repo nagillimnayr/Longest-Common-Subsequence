@@ -10,7 +10,9 @@ pd.options.mode.copy_on_write = True
 
 OUT_DIR = 'data'
 
-sequence_lengths = [100, 1000, 10000, 100000]
+ALGOS = [ 'parallel', 'distributed' ]
+sequence_lengths = [100, 1000, 10000]
+task_counts = [1, 2, 4, 8]
 n_runs = 8
 
 def record_serial():
@@ -85,7 +87,7 @@ def record_distributed():
       execution_time = 0.0
       
       for run in range(1, n_runs + 1):
-        file_name = f"{algo}-L{sequence_length}-P{n_processes}-R{run}.out"
+        file_name = f"{algo}-L{sequence_length}-T{n_processes}-R{run}.out"
         input_path = f"{in_dir}/L{sequence_length}/{file_name}"
         with open(input_path, 'r') as in_file:
           text = in_file.read()
@@ -105,12 +107,62 @@ def record_distributed():
     out_path = f"{out_dir}/{algo}-L{sequence_length}.csv"
     df.to_csv(out_path, index_label='n_processes')
     
+def get_serial_avg_time(length: int):
+  in_dir = f"output/serial/L{length}"
+  execution_time = 0.0
+  for run in range(1, n_runs + 1):
+    file_name = f"serial-L{length}-R{run}.out"
+    input_path = f"{in_dir}/L{length}/{file_name}"
+    with open(input_path, 'r') as in_file:
+      text = in_file.read()
+    pattern = r'(?<=Total time taken:)\s*(\d*[\.]?\d*)'
+    match = re.search(pattern, text)
+    if match is None:
+      raise ValueError(f"ERROR: Could not extract execution time for {file_name}")
+    execution_time += float(match.group(1))
+  return execution_time / float(n_runs)  
+    
+def get_avg_execution_time(algo: str, length: int,  n_tasks: int):
+  in_dir = f"output/{algo}/L{length}"
+  execution_time = 0.0
+  for run in range(1, n_runs + 1):
+    file_name = f"{algo}-L{length}-T{n_tasks}-R{run}.out"
+    input_path = f"{in_dir}/L{length}/{file_name}"
+    with open(input_path, 'r') as in_file:
+      text = in_file.read()
+    pattern = r'(?<=Total time taken:)\s*(\d*[\.]?\d*)'
+    match = re.search(pattern, text)
+    if match is None:
+      raise ValueError(f"ERROR: Could not extract execution time for {file_name}")
+    execution_time += float(match.group(1))
+  return execution_time / float(n_runs)  
+  
+    
+def record(length: int):
+    parallel_execution_times: list[float] = []
+    distributed_execution_times: list[float] = []
+    for n_tasks in task_counts:
+      parallel_execution_times.append(get_avg_execution_time('parallel', length, n_tasks))
+      distributed_execution_times.append(get_avg_execution_time('distributed', length, n_tasks))
+    
+    serial_execution_time = get_serial_avg_time(length)
+    df = pd.DataFrame({
+      'parallel': parallel_execution_times,
+      'distributed': distributed_execution_times,
+      'serial': [serial_execution_time] * 4
+    }, index=task_counts)
+    df.to_csv(f'{OUT_DIR}/L{length}', index_label='n_tasks')
+      
+
+    
+    
+    
   
 
 def main():
-  record_serial()
-  record_parallel()
-  record_distributed()
+  for length in sequence_lengths:
+    record(length)
+
 
 if __name__ == '__main__':
   main()
