@@ -17,7 +17,7 @@
  * let the next process know which index to pick up the task from.
  *
  * */
-class LCSDistributedGather : public LCSDistributedBase
+class LCSDistributed : public LCSDistributedBase
 {
 protected:
   std::string global_sequence_b;
@@ -164,7 +164,7 @@ protected:
   }
 
 public:
-  LCSDistributedGather(
+  LCSDistributed(
       const std::string &sequence_a,
       const std::string &sequence_b,
       const int world_size,
@@ -179,7 +179,7 @@ public:
     this->solve();
   }
 
-  virtual ~LCSDistributedGather()
+  virtual ~LCSDistributed()
   {
   }
 
@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
   // Divide up sequence B.
   std::string local_sequence_b = sequence_b.substr(start_col, n_cols);
 
-  LCSDistributedGather lcs(
+  LCSDistributed lcs(
       sequence_a,
       local_sequence_b,
       world_size,
