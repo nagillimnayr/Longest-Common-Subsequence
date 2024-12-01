@@ -131,8 +131,6 @@ protected:
       int n_elements =
           min_cells_per_thread + (thread_id < excess_cells ? 1 : 0);
 
-      sync_point.wait(); // Wait for all threads to synchronize
-
       // Compute this thread's portion of the diagonal
       if (n_elements > 0)
       {
@@ -148,7 +146,7 @@ protected:
       }
       sync_point.wait();
     }
-    thread_times_taken[thread_id] += thread_timer.stop(); // Stop timing
+    thread_times_taken[thread_id] = thread_timer.stop(); // Stop timing
   }
 
 public:
