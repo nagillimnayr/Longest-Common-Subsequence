@@ -41,6 +41,8 @@ lcs_distributed_gather
 lcs_parallel_diagonal
 lcs_parallel_refined
 
+bkup
+
 run.sh
 
 .vscode/

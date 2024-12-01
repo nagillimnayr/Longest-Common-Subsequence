@@ -60,31 +60,29 @@ def record_avg_time(length: int):
       'serial': [serial_execution_time] * 4
     }, index=task_counts)
     df.to_csv(f'{OUT_DIR}/avg_time_L{length}.csv', index_label='n_tasks')
+    print(df)
  
-def compute_speedup(t_1, t_n):
-  return t_1 / t_n
+def compute_speedup(serial_time, t_n):
+  return serial_time / t_n
   
       
 def record_speedup(length):
   parallel_speedups: list[float] = []
   distributed_speedups: list[float] = []
   
-  serial_t_1 = get_serial_avg_time(length)
-  parallel_t_1 = get_avg_execution_time('parallel', length, 1)
-  distributed_t_1 = get_avg_execution_time('distributed', length, 1)
+  serial_time = get_serial_avg_time(length)
   
   for n_tasks in task_counts:
     parallel_t_n = get_avg_execution_time('parallel', length, n_tasks)
     distributed_t_n = get_avg_execution_time('distributed', length, n_tasks)
     
-    parallel_speedups.append(compute_speedup(parallel_t_1, parallel_t_n))
-    distributed_speedups.append(compute_speedup(distributed_t_1, distributed_t_n))
+    parallel_speedups.append(compute_speedup(serial_time, parallel_t_n))
+    distributed_speedups.append(compute_speedup(serial_time, distributed_t_n))
   
   df = pd.DataFrame({
       'parallel': parallel_speedups,
       'distributed': distributed_speedups,
     }, index=task_counts)
-  
   print(df)
   
   df.to_csv(f'{OUT_DIR}/speedup_L{length}.csv', index_label='n_tasks')
@@ -92,7 +90,10 @@ def record_speedup(length):
 
 def main():
   for length in sequence_lengths:
+    print('\nExecution Time:')
     record_avg_time(length)
+    
+    print('\nSpeedup:')
     record_speedup(length)
 
 
