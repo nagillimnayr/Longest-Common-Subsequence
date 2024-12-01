@@ -38,9 +38,15 @@ protected:
   /* Total time taken (in seconds) to complete computation of the LCS. */
   double time_taken = 0.0;
 
+  /* Timer to record how long it takes to compute all entries of the matrix. */
+  Timer matrix_timer;
+  /* Time taken to compute all entries of the matrix. */
+  double matrix_time_taken = 0.0;
+
   /* The logic for computing individual entries of the matrix is the same
   regardless of which algorithm is being used. */
-  virtual void computeCell(const int row, const int col)
+  virtual void
+  computeCell(const int row, const int col)
   {
     /* Adjust the indices when accessing sequences, to account for extra row and
     column of 0s. in the matrix. */
@@ -251,6 +257,22 @@ public:
   {
     printMatrix();
     printInfo();
+  }
+
+  virtual void printMatrixTimeTaken()
+  {
+    printf("Time taken to compute matrix: %lf\n", matrix_time_taken);
+  }
+
+  virtual void printTotalTimeTaken()
+  {
+    printf("Total time taken: %lf\n", time_taken);
+  }
+
+  virtual void printTimeTaken()
+  {
+    printMatrixTimeTaken();
+    printTotalTimeTaken();
   }
 };
 

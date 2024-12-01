@@ -9,6 +9,7 @@ private:
   virtual void solve() override
   {
     timer.start();
+    matrix_timer.start();
     for (int i = 1; i < matrix_height; i++)
     {
       for (int j = 1; j < matrix_width; j++)
@@ -16,6 +17,7 @@ private:
         computeCell(i, j);
       }
     }
+    matrix_time_taken = matrix_timer.stop();
     determineLongestCommonSubsequence();
     time_taken = timer.stop();
   }
@@ -35,11 +37,6 @@ public:
   {
     printInfo();
     printTimeTaken();
-  }
-
-  void printTimeTaken()
-  {
-    printf("Total time taken: %lf\n", time_taken);
   }
 };
 

@@ -23,9 +23,6 @@ protected:
   const int world_size;
   const int world_rank;
 
-  Timer total_timer;
-  double total_time_taken = 0.0;
-
   int lcs_length = -1; /* The length of the longest common subsequence. */
 
   /* Need to keep track of this info globally for MPI_Gatherv(). */
@@ -95,7 +92,7 @@ protected:
           world_size - 1,
           0, MPI_COMM_WORLD,
           MPI_STATUS_IGNORE);
-      total_time_taken = total_timer.stop();
+      matrix_time_taken = matrix_timer.stop();
     }
   }
 
@@ -228,7 +225,6 @@ protected:
 
     if (world_rank == 0)
     {
-      total_time_taken = total_timer.stop();
       longest_common_subsequence = lcs_buffer;
     }
     delete[] lcs_buffer;
@@ -236,7 +232,7 @@ protected:
 
   void solveDistributed()
   {
-    timer.start();
+    matrix_timer.start();
     for (int row = 1; row < matrix_height; row++)
     {
       for (int col = 1; col < matrix_width; col++)
@@ -244,16 +240,16 @@ protected:
         computeCell(row, col);
       }
     }
-    time_taken = timer.stop();
+    // MPI_Barrier(MPI_COMM_WORLD);
+    matrix_time_taken = timer.stop();
   }
 
   virtual void solve() override
   {
-
-    total_timer.start();
+    timer.start();
     solveDistributed();
     determineLongestCommonSubsequence();
-    total_time_taken = total_timer.stop();
+    time_taken = timer.stop();
   }
 
 public:
@@ -304,11 +300,11 @@ public:
     }
   }
 
-  void printTotalTime()
+  virtual void printTotalTimeTaken()
   {
     if (world_rank == 0)
     {
-      printf("Total time taken: %lf\n", total_time_taken);
+      printf("Total time taken: %lf\n", time_taken);
     }
   }
 
@@ -328,7 +324,7 @@ public:
     if (world_rank == 0)
     {
       printf("\nrank | n_cols | time_taken\n");
-      printStats(0, time_taken);
+      printStats(0, matrix_time_taken);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -368,9 +364,9 @@ public:
     MPI_Barrier(MPI_COMM_WORLD);
     if (world_rank == 0)
     {
-      printTotalTime();
-      printf("\n");
       printInfo();
+      printf("\n");
+      printTimeTaken();
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }
