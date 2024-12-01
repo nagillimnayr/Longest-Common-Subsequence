@@ -109,7 +109,7 @@ protected:
     while (true)
     {
       int diagonal_index =
-          current_diagonal++; // Get the next diagonal to process
+          current_diagonal; // Get the next diagonal to process
 
       if (diagonal_index >= length_a + length_b + 1)
       {
@@ -141,6 +141,12 @@ protected:
       }
 
       sync_point.wait(); // Synchronize threads after this diagonal
+      if (thread_id == 0)
+      {
+        // Increment shared diagonal index.
+        current_diagonal++;
+      }
+      sync_point.wait();
     }
     thread_times_taken[thread_id] += thread_timer.stop(); // Stop timing
   }
