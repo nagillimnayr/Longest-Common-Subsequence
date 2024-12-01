@@ -104,17 +104,13 @@ protected:
    */
   void solveParallel(int thread_id)
   {
+    const int max_diagonals = length_a + length_b + 1;
     thread_timer.start(); // Start timing for this thread
     // Process each diagonal one at a time
-    while (true)
+    while (current_diagonal < max_diagonals)
     {
       int diagonal_index =
           current_diagonal; // Get the next diagonal to process
-
-      if (diagonal_index >= length_a + length_b + 1)
-      {
-        break; // Exit when all diagonals are processed
-      }
 
       // Determine the size of the diagonal
       int diagonal_length =
