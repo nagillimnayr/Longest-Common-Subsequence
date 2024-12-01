@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <atomic>
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
@@ -11,9 +12,8 @@
 
 // ***
 //  This is the parallel version of the LCS program that takes two separate
-//  strings and finds the longs common subsequence between the the two. This
-//  version of the algorithm works with threads to complete the calculations in
-//  parallel
+//  strings and finds the longest common subsequence between them. This version
+//  uses threads to perform calculations in parallel.
 // ***
 
 class Barrier {
@@ -47,13 +47,14 @@ class Barrier {
   std::condition_variable cv_;
 };
 
-// Converted class from Base LongestCommonSubsequence (LCS) for parallel verion
+// Derived class for parallel computation of Longest Common Subsequence (LCS)
 class LongestCommonSubsequenceParallel : public LongestCommonSubsequence {
  protected:
   int numThreads;      // Number of threads for parallel computation
   Barrier sync_point;  // Barrier for thread synchronization
   std::vector<double> thread_times_taken;
   std::vector<unsigned int> columns_processed;
+  std::atomic<unsigned int> current_diagonal;
 
   double solve_time_taken;
   Timer thread_timer;
@@ -68,7 +69,7 @@ class LongestCommonSubsequenceParallel : public LongestCommonSubsequence {
    */
   void computeDiagonal(const int diagonal_index, const int start_index,
                        const int n_elements) {
-    // Calculate starting cell of the diagonal
+    // Calculate the starting cell of the diagonal
     int start_row = std::max(0, diagonal_index - length_b + 1);
     int start_col = std::min(diagonal_index, length_b - 1);
 
@@ -91,13 +92,17 @@ class LongestCommonSubsequenceParallel : public LongestCommonSubsequence {
   /**
    * Solve LCS using parallel threads.
    */
-  void solveParallel() {
-    solve_timer.start();
-    const int n_diagonals = length_a + length_b - 1;  // Total diagonals
-
+  void solveParallel(int thread_id) {
+    thread_timer.start();  // Start timing for this thread
     // Process each diagonal one at a time
-    for (int diagonal_index = 0; diagonal_index < n_diagonals;
-         ++diagonal_index) {
+    while (true) {
+      int diagonal_index =
+          current_diagonal++;  // Get the next diagonal to process
+
+      if (diagonal_index >= length_a + length_b + 1) {
+        break;  // Exit when all diagonals are processed
+      }
+
       // Determine the size of the diagonal
       int diagonal_length =
           std::min({diagonal_index + 1, length_a, length_b,
@@ -107,46 +112,60 @@ class LongestCommonSubsequenceParallel : public LongestCommonSubsequence {
       int min_cells_per_thread = diagonal_length / numThreads;
       int excess_cells = diagonal_length % numThreads;
 
-      // Launch threads
-      std::vector<std::thread> threads;
-      for (int thread_id = 0; thread_id < numThreads; ++thread_id) {
-        threads.emplace_back([&, thread_id]() {
-          thread_timer.start();
-          // Calculate work range for this thread
-          int start_index = thread_id * min_cells_per_thread +
-                            std::min(thread_id, excess_cells);
-          int n_elements =
-              min_cells_per_thread + (thread_id < excess_cells ? 1 : 0);
-          computeDiagonal(diagonal_index, start_index, n_elements);
+      // Calculate the work range for this thread
+      int start_index =
+          thread_id * min_cells_per_thread + std::min(thread_id, excess_cells);
+      int n_elements =
+          min_cells_per_thread + (thread_id < excess_cells ? 1 : 0);
 
-          // Update columns processed and time taken for this thread
-          columns_processed[thread_id] += n_elements;
-          thread_times_taken[thread_id] += thread_timer.stop();
-          // Synchronize threads after this diagonal
-          sync_point.wait();
-        });
+      sync_point.wait();  // Wait for all threads to synchronize
+
+      // Compute this thread's portion of the diagonal
+      if (n_elements > 0) {
+        computeDiagonal(diagonal_index, start_index, n_elements);
+        columns_processed[thread_id] += n_elements;  // Update stats
       }
 
-      // Join threads
-      for (auto &thread : threads) {
-        thread.join();
-      }
+      sync_point.wait();  // Synchronize threads after this diagonal
     }
-
-    solve_time_taken = solve_timer.stop();
-    // After processing all diagonals, determine the LCS
-    determineLongestCommonSubsequence();  // Base class function to get LCS
+    thread_times_taken[thread_id] += thread_timer.stop();  // Stop timing
   }
 
  public:
+  // Constructor
   LongestCommonSubsequenceParallel(const std::string &sequence_a,
                                    const std::string &sequence_b, int threads)
       : LongestCommonSubsequence(sequence_a, sequence_b),
         numThreads(std::max(1, threads)),
         sync_point(numThreads),
         thread_times_taken(numThreads, 0.0),
-        columns_processed(numThreads, 0) {}
+        columns_processed(numThreads, 0),
+        current_diagonal(0) {}
 
+  // Main solve method
+  virtual void solve() override {
+    solve_timer.start();                              // Start overall timing
+    const int n_diagonals = length_a + length_b - 1;  // Total diagonals
+
+    // Launch threads
+    std::vector<std::thread> threads(numThreads);
+
+    for (int i = 0; i < numThreads; i++) {
+      threads[i] = std::thread(&LongestCommonSubsequenceParallel::solveParallel,
+                               this, i);
+    }
+
+    for (int i = 0; i < numThreads; i++) {
+      threads[i].join();
+    }
+
+    solve_time_taken = solve_timer.stop();  // Stop overall timing
+
+    // After processing all diagonals, determine the LCS
+    determineLongestCommonSubsequence();
+  }
+
+  // Print thread-level statistics
   void printThreadStats() {
     printf("-_-_-_-_-_-_-_ LCS Parallel Statistics _-_-_-_-_-_-_-\n\n");
     printf("Thread ID || Columns Computed || Time Taken\n");
@@ -156,8 +175,6 @@ class LongestCommonSubsequenceParallel : public LongestCommonSubsequence {
     }
     printf("Solve Time Taken: %f\n", solve_time_taken);
   }
-
-  virtual void solve() override { solveParallel(); }
 };
 
 int main(int argc, char *argv[]) {
@@ -165,7 +182,7 @@ int main(int argc, char *argv[]) {
   double total_time_taken = 0.0;
   program_timer.start();
 
-  // Create command line options objects
+  // Create command-line options object
   cxxopts::Options options("lcs_parallel",
                            "LCS program for CMPT 431 project using threads");
 
@@ -184,7 +201,7 @@ int main(int argc, char *argv[]) {
   std::string seqB = command_options["sequence_b"].as<std::string>();
 
   // Validate input
-  if (seqA.empty() || seqA.empty()) {
+  if (seqA.empty() || seqB.empty()) {
     std::cerr << "Error: Sequences cannot be empty.\n";
     return 1;
   }
