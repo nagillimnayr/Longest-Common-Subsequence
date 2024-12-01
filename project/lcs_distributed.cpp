@@ -4,8 +4,8 @@
 #include <iostream>
 #include <mpi.h>
 
-#include "../cxxopts.hpp"
-#include "lcs_distributed.h"
+#include "cxxopts.hpp"
+#include "lcs.h"
 
 /**
  * If the specific longest common subsequence is required, then the sub-matrices
@@ -17,10 +17,87 @@
  * let the next process know which index to pick up the task from.
  *
  * */
-class LCSDistributed : public LCSDistributedBase
+class LCSDistributed : public LongestCommonSubsequence
 {
 protected:
+  const int world_size;
+  const int world_rank;
+
+  Timer total_timer;
+  double total_time_taken = 0.0;
+
+  int lcs_length = -1; /* The length of the longest common subsequence. */
+
+  /* Need to keep track of this info globally for MPI_Gatherv(). */
+  int *start_cols;
+  int *sub_str_widths;
   std::string global_sequence_b;
+
+  virtual void computeCell(const int row, const int col)
+  {
+    int comm_value;
+    /* If we are computing a cell in the leftmost column of our local matrix,
+      then we need to get data from the cells in the rightmost column of our
+      neighboring process to the left. Unless we are the leftmost process. */
+    if (col == 1 && world_rank != 0)
+    {
+      MPI_Recv(
+          &comm_value,
+          1, // Only need a single value.
+          MPI_UNSIGNED,
+          world_rank - 1, // Source: Get from neighbor to the left.
+          row,            // Tag: Row index.
+          MPI_COMM_WORLD,
+          MPI_STATUS_IGNORE);
+      // Store the value in the local matrix.
+      matrix[row][col - 1] = comm_value;
+    }
+
+    LongestCommonSubsequence::computeCell(row, col);
+
+    /* If we are computing a cell in the rightmost column of our local
+    matrix, we must send the results to our neighbor to the right once we
+    are done. Unless we are the rightmost process. */
+    if (col == matrix_width - 1 && world_rank != world_size - 1)
+    {
+      comm_value = matrix[row][col];
+      MPI_Send(
+          &comm_value,
+          1,
+          MPI_UNSIGNED,
+          world_rank + 1, // Destination: Send to neighbor to the right.
+          row,
+          MPI_COMM_WORLD);
+    }
+  }
+
+  virtual void determineLongestSubsequenceLength()
+  {
+    /* Once the sub-matrices have been computed, we will need to send the
+    bottom right entry of the rightmost process to the root process. */
+    if (world_rank == world_size - 1)
+    {
+      lcs_length = LongestCommonSubsequence::getLongestSubsequenceLength();
+      MPI_Send(
+          &lcs_length,
+          1,
+          MPI_INT,
+          0,
+          0,
+          MPI_COMM_WORLD);
+    }
+    else if (world_rank == 0)
+    {
+      MPI_Recv(
+          &lcs_length,
+          1,
+          MPI_INT,
+          world_size - 1,
+          0, MPI_COMM_WORLD,
+          MPI_STATUS_IGNORE);
+      total_time_taken = total_timer.stop();
+    }
+  }
 
   /* Broadcast the length of the LCS from the rightmost process to every other
   process.*/
@@ -157,10 +234,26 @@ protected:
     delete[] lcs_buffer;
   }
 
+  void solveDistributed()
+  {
+    timer.start();
+    for (int row = 1; row < matrix_height; row++)
+    {
+      for (int col = 1; col < matrix_width; col++)
+      {
+        computeCell(row, col);
+      }
+    }
+    time_taken = timer.stop();
+  }
+
   virtual void solve() override
   {
-    LCSDistributedBase::solve();
+
+    total_timer.start();
+    solveDistributed();
     determineLongestCommonSubsequence();
+    total_time_taken = total_timer.stop();
   }
 
 public:
@@ -172,7 +265,11 @@ public:
       int *start_cols,
       int *sub_str_widths,
       const std::string &global_sequence_b)
-      : LCSDistributedBase(sequence_a, sequence_b, world_size, world_rank, start_cols, sub_str_widths),
+      : LongestCommonSubsequence(sequence_a, sequence_b),
+        world_size(world_size),
+        world_rank(world_rank),
+        start_cols(start_cols),
+        sub_str_widths(sub_str_widths),
         global_sequence_b(global_sequence_b)
   {
 
@@ -192,6 +289,90 @@ public:
   {
     printLCSLength();
     // std::cout << "Longest common subsequence: " << longest_common_subsequence << "\n";
+  }
+
+  void printPerProcessMatrices()
+  {
+    for (int rank = 0; rank < world_size; rank++)
+    {
+      if (rank == world_rank)
+      {
+        std::cout << "\nRank: " << world_rank << "\n";
+        printMatrix();
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+  }
+
+  void printTotalTime()
+  {
+    if (world_rank == 0)
+    {
+      printf("Total time taken: %lf\n", total_time_taken);
+    }
+  }
+
+  void printStats(int rank, double time)
+  {
+    if (world_rank != 0)
+      return;
+
+    printf("%4d | %6d | %lf\n",
+           rank,
+           sub_str_widths[rank],
+           time);
+  }
+
+  void printPerProcessStats()
+  {
+    if (world_rank == 0)
+    {
+      printf("\nrank | n_cols | time_taken\n");
+      printStats(0, time_taken);
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    /* Send stats to root process to ensure proper ordering of print statements. */
+    for (int rank = 1; rank < world_size; rank++)
+    {
+
+      if (rank == world_rank)
+      {
+        MPI_Send(
+            &time_taken,
+            1,
+            MPI_DOUBLE,
+            0,
+            0,
+            MPI_COMM_WORLD);
+      }
+      else if (world_rank == 0)
+      {
+        double time;
+        MPI_Recv(
+            &time,
+            1,
+            MPI_DOUBLE,
+            rank,
+            0,
+            MPI_COMM_WORLD,
+            MPI_STATUS_IGNORE);
+        printStats(rank, time);
+      }
+    }
+  }
+
+  virtual void print() override
+  {
+    printPerProcessStats();
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (world_rank == 0)
+    {
+      printTotalTime();
+      printf("\n");
+      printInfo();
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
   }
 };
 

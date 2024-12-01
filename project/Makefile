@@ -6,8 +6,6 @@ SERIAL= lcs_serial
 PARALLEL= lcs_parallel
 REFINED= lcs_parallel_refined
 DISTRIBUTED= lcs_distributed
-DISTRIBUTED_LEN= lcs_distributed_length
-DISTRIBUTED_GATHER= lcs_distributed_gather
 HEADERS=cxxopts.hpp timer.h lcs.h
 ALL= $(SERIAL) $(PARALLEL) $(DISTRIBUTED) $(REFINED)
 
@@ -22,13 +20,7 @@ $(PARALLEL): %: %.cpp $(HEADERS)
 $(REFINED): %: %.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(DISTRIBUTED): %: distributed/%.cpp $(HEADERS) distributed/lcs_distributed.h
-	$(MPICXX) $(CXXFLAGS) -o $@ $<
-
-$(DISTRIBUTED_LEN): %: distributed/%.cpp $(HEADERS) distributed/lcs_distributed.h
-	$(MPICXX) $(CXXFLAGS) -o $@ $<
-
-$(DISTRIBUTED_GATHER): %: distributed/%.cpp $(HEADERS) distributed/lcs_distributed.h
+$(DISTRIBUTED): %: %.cpp $(HEADERS)
 	$(MPICXX) $(CXXFLAGS) -o $@ $<
 
 .PHONY : clean
