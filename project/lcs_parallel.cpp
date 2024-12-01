@@ -64,7 +64,7 @@ protected:
   std::atomic<unsigned int> current_diagonal;
 
   double solve_time_taken;
-  Timer thread_timer;
+  std::vector<Timer> thread_timers;
   Timer solve_timer;
 
   /**
@@ -105,7 +105,7 @@ protected:
   void solveParallel(int thread_id)
   {
     const int max_diagonals = length_a + length_b + 1;
-    thread_timer.start(); // Start timing for this thread
+    thread_timers[thread_id].start(); // Start timing for this thread
     // Process each diagonal one at a time
     while (current_diagonal < max_diagonals)
     {
@@ -142,7 +142,7 @@ protected:
       }
       sync_point.wait();
     }
-    thread_times_taken[thread_id] = thread_timer.stop(); // Stop timing
+    thread_times_taken[thread_id] = thread_timers[thread_id].stop(); // Stop timing
   }
 
 public:
@@ -153,8 +153,11 @@ public:
         numThreads(std::max(1, threads)),
         sync_point(numThreads),
         thread_times_taken(numThreads, 0.0),
+        thread_timers(numThreads),
         columns_processed(numThreads, 0),
-        current_diagonal(0) {}
+        current_diagonal(0)
+  {
+  }
 
   // Main solve method
   virtual void solve() override
