@@ -107,10 +107,60 @@ protected:
     }
   }
 
+  void computeColumn(int thread_id, int col)
+  {
+    // Iterate over column, check left neighbor's coords when necessary.
+    int row = 1; // Start at 1 because row 0 is all zeros.
+
+    // Update coords.
+    thread_coords[thread_id] = {row, col};
+
+    while (row < matrix_height)
+    {
+      int left_neighbor_id = thread_id - 1;
+      if (thread_id == 0)
+      {
+        left_neighbor_id = numThreads - 1;
+      }
+      Coords my_coords = thread_coords[thread_id];
+      Coords neighbor_coords = thread_coords[left_neighbor_id];
+
+      /* If left neighbor is on a column greater than ours, then that means
+      the column to our left is complete and we can safely compute the entirety
+      of the column that we're on. */
+      if (neighbor_coords.col < my_coords.col)
+      {
+        /* Busy wait until left neighbor's row is greater than our row.
+        Then we know that it is safe to read entry to our left. */
+        while (neighbor_coords.row <= my_coords.row)
+          ;
+      }
+
+      // Compute cell once it is safe to do so.
+      computeCell(row, col);
+    }
+  }
+
+  void solveParallel(int thread_id)
+  {
+    thread_timers[thread_id].start(); // Start timing for this thread
+
+    // Start computing columns at index 1, because column 0 is all zeros.
+    int col = thread_id + 1;
+    while (col < matrix_width)
+    {
+      computeColumn();
+      // Jump to column after the rightmost neighbor.
+      col += numThreads;
+    }
+
+    thread_times_taken[thread_id] = thread_timers[thread_id].stop(); // Stop timing
+  }
+
   /**
    * Solve LCS using parallel threads.
    */
-  void solveParallel(int thread_id)
+  void solveParallelDiagonal(int thread_id)
   {
     const int max_diagonals = length_a + length_b + 1;
     thread_timers[thread_id].start(); // Start timing for this thread
