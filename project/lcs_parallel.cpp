@@ -53,6 +53,12 @@ private:
   std::condition_variable cv_;
 };
 
+struct Coords
+{
+  int row;
+  int col;
+};
+
 // Derived class for parallel computation of Longest Common Subsequence (LCS)
 class LongestCommonSubsequenceParallel : public LongestCommonSubsequence
 {
@@ -60,12 +66,14 @@ protected:
   int numThreads;     // Number of threads for parallel computation
   Barrier sync_point; // Barrier for thread synchronization
   std::vector<double> thread_times_taken;
-  std::vector<unsigned int> columns_processed;
+  // std::vector<unsigned int> columns_processed;
   std::atomic<unsigned int> current_diagonal;
 
   double solve_time_taken;
   std::vector<Timer> thread_timers;
   Timer solve_timer;
+
+  std::vector<Coords> thread_coords;
 
   /**
    * Function to compute a portion of a diagonal.
@@ -131,7 +139,7 @@ protected:
       if (n_elements > 0)
       {
         computeDiagonal(diagonal_index, start_index, n_elements);
-        columns_processed[thread_id] += n_elements; // Update stats
+        // columns_processed[thread_id] += n_elements; // Update stats
       }
 
       sync_point.wait(); // Synchronize threads after this diagonal
@@ -154,7 +162,8 @@ public:
         sync_point(numThreads),
         thread_times_taken(numThreads, 0.0),
         thread_timers(numThreads),
-        columns_processed(numThreads, 0),
+        thread_coords(numThreads),
+        // columns_processed(numThreads, 0),
         current_diagonal(0)
   {
   }
@@ -189,11 +198,16 @@ public:
   void printThreadStats()
   {
     printf("-_-_-_-_-_-_-_ LCS Parallel Statistics _-_-_-_-_-_-_-\n\n");
-    printf("Thread ID || Columns Computed || Time Taken\n");
+    // printf("Thread ID || Columns Computed || Time Taken\n");
+    // for (int id = 0; id < numThreads; id++)
+    // {
+    //   printf("%i || %u || %lf\n", id, columns_processed[id],
+    //          thread_times_taken[id]);
+    // }
+    printf("Thread ID || Time Taken\n");
     for (int id = 0; id < numThreads; id++)
     {
-      printf("%i || %u || %lf\n", id, columns_processed[id],
-             thread_times_taken[id]);
+      printf("%9d || %lf\n", id, thread_times_taken[id]);
     }
     printf("Solve Time Taken: %f\n", solve_time_taken);
   }
