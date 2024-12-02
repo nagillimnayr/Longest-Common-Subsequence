@@ -308,8 +308,8 @@ int main(int argc, char *argv[])
 
   // Print the result
   printf("-_-_-_-_-_-_-_ LCS Parallel Results _-_-_-_-_-_-_-\n");
-  lcs.print();
-  printf("\n");
+  // lcs.print();
+  // printf("\n");
   lcs.printThreadStats();
   printf("Total time taken: %lf\n", total_time_taken);
 
