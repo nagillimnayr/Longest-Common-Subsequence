@@ -53,12 +53,6 @@ private:
   std::condition_variable cv_;
 };
 
-struct Coords
-{
-  std::atomic<int> row;
-  std::atomic<int> col;
-};
-
 // Derived class for parallel computation of Longest Common Subsequence (LCS)
 class LongestCommonSubsequenceParallel : public LongestCommonSubsequence
 {
@@ -66,133 +60,62 @@ protected:
   int numThreads;     // Number of threads for parallel computation
   Barrier sync_point; // Barrier for thread synchronization
   std::vector<double> thread_times_taken;
-  // std::vector<unsigned int> columns_processed;
-  std::atomic<unsigned int> current_diagonal;
 
   double solve_time_taken;
   std::vector<Timer> thread_timers;
   Timer solve_timer;
 
-  std::vector<Coords> thread_coords;
+  std::vector<int> thread_row_indices; /* To let other threads know which row a
+  particular thread is on. */
 
-  /**
-   * Function to compute a portion of a diagonal.
-   *
-   * @param diagonal_index Index of the diagonal to compute.
-   * @param start_index Starting index within the diagonal for this thread.
-   * @param n_elements Number of cells to process in this diagonal.
-   */
-  void computeDiagonal(const int diagonal_index, const int start_index,
-                       const int n_elements)
-  {
-    // Calculate the starting cell of the diagonal
-    int start_row = std::max(0, diagonal_index - length_b + 1);
-    int start_col = std::min(diagonal_index, length_b - 1);
-
-    // Adjust starting cell for this thread's portion
-    start_row += start_index;
-    start_col -= start_index;
-
-    // Iterate through assigned cells in this diagonal
-    for (int i = 0; i < n_elements; ++i)
-    {
-      if (start_row >= 0 && start_row < length_a && start_col >= 0 &&
-          start_col < length_b)
-      {
-        computeCell(start_row + 1,
-                    start_col + 1); // Call computeCell (1-based)
-      }
-      start_row++;
-      start_col--;
-    }
-  }
-
-  void computeColumn(int thread_id)
-  {
-    // Iterate over column, check left neighbor's coords when necessary.
-    thread_coords[thread_id].row = 1; // Start at 1 because row 0 is all zeros.
-    int left_neighbor_id = thread_id == 0 ? numThreads - 1 : thread_id - 1;
-
-    while (thread_coords[thread_id].row < matrix_height)
-    {
-      int row = thread_coords[thread_id].row.load();
-      int col = thread_coords[thread_id].col.load();
-      // printf("thread_id: %d | row: %d | col: %d\n", thread_id, row, col);
-      /* If left neighbor is on a column greater than ours, then that means
-      the column to our left is complete and we can safely compute the entirety
-      of the column that we're on. */
-      if (thread_coords[left_neighbor_id].col.load() < col)
-      {
-        /* Busy wait until left neighbor's row is greater than our row.
-        Then we know that it is safe to read entry to our left. */
-        while (thread_coords[left_neighbor_id].col.load() < col && thread_coords[left_neighbor_id].row.load() <= row)
-          ;
-      }
-      // Compute cell once it is safe to do so.
-      computeCell(row, col);
-      thread_coords[thread_id].row++;
-    }
-  }
+  std::vector<std::condition_variable> thread_cvs; /* Used to signal next thread
+  that a row has been completed. */
+  std::vector<std::mutex> thread_mutexes;
 
   void solveParallel(int thread_id)
   {
     thread_timers[thread_id].start(); // Start timing for this thread
 
-    // Start computing columns at index 1, because column 0 is all zeros.
-    thread_coords[thread_id].col = thread_id + 1;
-    while (thread_coords[thread_id].col < matrix_width)
+    int min_cols_per_thread = length_b / numThreads;
+    int excess_cols = length_b % numThreads;
+
+    int start_col;
+    int n_cols = min_cols_per_thread;
+    if (thread_id < excess_cols)
     {
-      computeColumn(thread_id);
-      // Jump to column after the rightmost neighbor.
-      thread_coords[thread_id].col += numThreads;
+      start_col = thread_id * (min_cols_per_thread + 1);
+      n_cols++;
+    }
+    else
+    {
+      start_col = (thread_id * min_cols_per_thread) + excess_cols;
     }
 
-    thread_times_taken[thread_id] = thread_timers[thread_id].stop(); // Stop timing
-  }
-
-  /**
-   * Solve LCS using parallel threads.
-   */
-  void solveParallelDiagonal(int thread_id)
-  {
-    const int max_diagonals = length_a + length_b + 1;
-    thread_timers[thread_id].start(); // Start timing for this thread
-    // Process each diagonal one at a time
-    while (current_diagonal < max_diagonals)
+    int end_col = std::min(start_col + n_cols - 1, matrix_width - 1);
+    for (int row = 0; row < matrix_height; row++)
     {
-      int diagonal_index =
-          current_diagonal; // Get the next diagonal to process
-
-      // Determine the size of the diagonal
-      int diagonal_length =
-          std::min({diagonal_index + 1, length_a, length_b,
-                    length_a + length_b - diagonal_index - 1});
-
-      // Divide work among threads
-      int min_cells_per_thread = diagonal_length / numThreads;
-      int excess_cells = diagonal_length % numThreads;
-
-      // Calculate the work range for this thread
-      int start_index =
-          thread_id * min_cells_per_thread + std::min(thread_id, excess_cells);
-      int n_elements =
-          min_cells_per_thread + (thread_id < excess_cells ? 1 : 0);
-
-      // Compute this thread's portion of the diagonal
-      if (n_elements > 0)
+      /* If not the leftmost thread, check if thread to the left is on a row
+      greater than ours. If not, block until they are. */
+      if (thread_id > 0 && thread_row_indices[thread_id - 1] <= row)
       {
-        computeDiagonal(diagonal_index, start_index, n_elements);
-        // columns_processed[thread_id] += n_elements; // Update stats
+
+        std::unique_lock<std::mutex> ulock(thread_mutexes[thread_id - 1]);
+        thread_cvs[thread_id - 1].wait(ulock);
+        ulock.unlock();
+      }
+      for (int col = start_col; col <= end_col; col++)
+      {
+        computeCell(row, col);
       }
 
-      sync_point.wait(); // Synchronize threads after this diagonal
-      if (thread_id == 0)
+      thread_row_indices[thread_id] = row + 1;
+      if (thread_id < numThreads - 1)
       {
-        // Increment shared diagonal index.
-        current_diagonal++;
+        // Signal neighbor to the right that they may begin their row.
+        thread_cvs[thread_id].notify_all();
       }
-      sync_point.wait();
     }
+
     thread_times_taken[thread_id] = thread_timers[thread_id].stop(); // Stop timing
   }
 
@@ -205,10 +128,14 @@ public:
         sync_point(numThreads),
         thread_times_taken(numThreads, 0.0),
         thread_timers(numThreads),
-        thread_coords(numThreads),
-        // columns_processed(numThreads, 0),
-        current_diagonal(0)
+        thread_cvs(numThreads - 1),
+        thread_mutexes(numThreads - 1),
+        thread_row_indices(numThreads)
   {
+    for (int n = 0; n < numThreads; n++)
+    {
+      thread_row_indices[n] = 1;
+    }
   }
 
   // Main solve method
@@ -241,12 +168,6 @@ public:
   void printThreadStats()
   {
     printf("-_-_-_-_-_-_-_ LCS Parallel Statistics _-_-_-_-_-_-_-\n\n");
-    // printf("Thread ID || Columns Computed || Time Taken\n");
-    // for (int id = 0; id < numThreads; id++)
-    // {
-    //   printf("%i || %u || %lf\n", id, columns_processed[id],
-    //          thread_times_taken[id]);
-    // }
     printf("Thread ID || Time Taken\n");
     for (int id = 0; id < numThreads; id++)
     {
