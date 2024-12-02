@@ -16,49 +16,11 @@
 //  uses threads to perform calculations in parallel.
 // ***
 
-class Barrier
-{
-public:
-  explicit Barrier(int num_threads)
-      : num_threads(num_threads), count(0), generation(0) {}
-
-  void wait()
-  {
-    std::unique_lock<std::mutex> lock(mutex);
-
-    // Get the generation number when entering the barrier
-    int gen = generation;
-
-    // Increment the count of threads that have reached the barrier
-    if (++count == num_threads)
-    {
-      // If the last thread reached, reset for the next generation
-      generation++;
-      count = 0;
-      cv.notify_all(); // Wake all threads to continue
-    }
-    else
-    {
-      // Wait for other threads to reach the barrier
-      cv.wait(lock, [this, gen]
-              { return gen != generation; });
-    }
-  }
-
-private:
-  int num_threads;
-  int count;
-  int generation;
-  std::mutex mutex;
-  std::condition_variable cv;
-};
-
 // Derived class for parallel computation of Longest Common Subsequence (LCS)
 class LongestCommonSubsequenceParallel : public LongestCommonSubsequence
 {
 protected:
-  int numThreads;     // Number of threads for parallel computation
-  Barrier sync_point; // Barrier for thread synchronization
+  int numThreads; // Number of threads for parallel computation
   std::vector<double> thread_times_taken;
 
   double solve_time_taken;
@@ -67,6 +29,10 @@ protected:
 
   std::vector<std::atomic<int>> thread_row_indices; /* To let other threads know which row a
   particular thread is on. */
+
+  std::condition_variable cv; /* Used to signal next thread to the right
+  that they may begin their row. */
+  std::mutex mutex;           /* For the condition variable. */
 
   void solveParallel(int thread_id)
   {
@@ -96,8 +62,14 @@ protected:
       greater than ours. If not, busy wait until they are. */
       if (thread_id > 0)
       {
-        while (thread_row_indices[thread_id - 1] <= row)
-          ;
+        if (thread_row_indices[thread_id - 1] <= row)
+        {
+          std::unique_lock<std::mutex> ulock(mutex);
+          /* Wait until thread to the left is on the row after us.*/
+          cv.wait(ulock, [this, &thread_id, &row]()
+                  { return thread_row_indices[thread_id - 1] > row; });
+          ulock.unlock();
+        }
       }
 
       /* Once the neighbor to the left is on the row after us, we can freely
@@ -110,6 +82,9 @@ protected:
       /* This needs to be updated at the end of the loop to ensure that the last
       update is recorded. */
       thread_row_indices[thread_id] += 1;
+
+      /* Signal other threads to wake up. */
+      cv.notify_all();
     }
 
     thread_times_taken[thread_id] = thread_timers[thread_id].stop(); // Stop timing
@@ -121,15 +96,10 @@ public:
                                    const std::string &sequence_b, int threads)
       : LongestCommonSubsequence(sequence_a, sequence_b),
         numThreads(std::max(1, threads)),
-        sync_point(numThreads),
         thread_times_taken(numThreads, 0.0),
         thread_timers(numThreads),
         thread_row_indices(numThreads)
   {
-    for (int n = 0; n < numThreads; n++)
-    {
-      thread_row_indices[n].store(1);
-    }
   }
 
   // Main solve method

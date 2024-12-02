@@ -11,7 +11,6 @@ os.makedirs('graphs', exist_ok=True)
 ALGOS = ['serial', 'parallel', 'distributed']
 
 lengths = [100, 1000, 10000]
-
   
 
 def make_avg_time_graph(length: int):

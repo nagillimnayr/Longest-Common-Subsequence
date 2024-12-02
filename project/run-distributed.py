@@ -10,7 +10,7 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 process_counts = [1, 2, 4, 8]
 sequence_lengths = [100, 1000, 10000]
-n_runs = 5
+n_runs = 8
 
 def user_jobs_running():
     try:
