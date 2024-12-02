@@ -122,19 +122,14 @@ protected:
       {
         left_neighbor_id = numThreads - 1;
       }
-      Coords my_coords = thread_coords[thread_id];
-      Coords neighbor_coords = thread_coords[left_neighbor_id];
 
       /* If left neighbor is on a column greater than ours, then that means
       the column to our left is complete and we can safely compute the entirety
       of the column that we're on. */
-      if (neighbor_coords.col < my_coords.col)
-      {
-        /* Busy wait until left neighbor's row is greater than our row.
-        Then we know that it is safe to read entry to our left. */
-        while (neighbor_coords.row <= my_coords.row)
-          ;
-      }
+      /* Busy wait until left neighbor's row is greater than our row.
+      Then we know that it is safe to read entry to our left. */
+      while (thread_coords[left_neighbor_id].col < col && thread_coords[left_neighbor_id].row <= row)
+        ;
 
       // Compute cell once it is safe to do so.
       computeCell(row, col);
@@ -149,7 +144,7 @@ protected:
     int col = thread_id + 1;
     while (col < matrix_width)
     {
-      computeColumn();
+      computeColumn(thread_id, col);
       // Jump to column after the rightmost neighbor.
       col += numThreads;
     }
