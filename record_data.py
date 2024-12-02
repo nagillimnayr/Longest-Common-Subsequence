@@ -13,7 +13,7 @@ OUT_DIR = 'data'
 ALGOS = [ 'parallel', 'distributed' ]
 sequence_lengths = [100, 1000, 10000]
 task_counts = [1, 2, 4, 8]
-n_runs = 8
+n_runs = 5
 
 def get_serial_avg_time(length: int):
   in_dir = f"output/serial/L{length}"
