@@ -4,10 +4,9 @@ CXXFLAGS = -std=c++14 -pthread -O3
 
 SERIAL= lcs_serial
 PARALLEL= lcs_parallel
-REFINED= lcs_parallel_refined
 DISTRIBUTED= lcs_distributed
 HEADERS=cxxopts.hpp timer.h lcs.h
-ALL= $(SERIAL) $(PARALLEL) $(DISTRIBUTED) $(REFINED)
+ALL= $(SERIAL) $(PARALLEL) $(DISTRIBUTED)
 
 all : $(ALL)
 
@@ -15,9 +14,6 @@ $(SERIAL): %: %.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
 $(PARALLEL): %: %.cpp $(HEADERS)
-	$(CXX) $(CXXFLAGS) -o $@ $<
-
-$(REFINED): %: %.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
 $(DISTRIBUTED): %: %.cpp $(HEADERS)
