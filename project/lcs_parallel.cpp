@@ -55,8 +55,8 @@ private:
 
 struct Coords
 {
-  int row;
-  int col;
+  std::atomic<int> row;
+  std::atomic<int> col;
 };
 
 // Derived class for parallel computation of Longest Common Subsequence (LCS)
@@ -107,28 +107,30 @@ protected:
     }
   }
 
-  void computeColumn(int thread_id, int col)
+  void computeColumn(int thread_id)
   {
     // Iterate over column, check left neighbor's coords when necessary.
-    int row = 1; // Start at 1 because row 0 is all zeros.
+    thread_coords[thread_id].row = 1; // Start at 1 because row 0 is all zeros.
+    int left_neighbor_id = thread_id == 0 ? numThreads - 1 : thread_id - 1;
 
-    // Update coords.
-    thread_coords[thread_id] = {row, col};
-
-    while (row < matrix_height)
+    while (thread_coords[thread_id].row < matrix_height)
     {
-      int left_neighbor_id = thread_id == 0 ? numThreads - 1 : thread_id - 1;
-
+      int row = thread_coords[thread_id].row.load();
+      int col = thread_coords[thread_id].col.load();
+      // printf("thread_id: %d | row: %d | col: %d\n", thread_id, row, col);
       /* If left neighbor is on a column greater than ours, then that means
       the column to our left is complete and we can safely compute the entirety
       of the column that we're on. */
-      /* Busy wait until left neighbor's row is greater than our row.
-      Then we know that it is safe to read entry to our left. */
-      while (thread_coords[left_neighbor_id].col < col && thread_coords[left_neighbor_id].row <= row)
-        ;
-
+      if (thread_coords[left_neighbor_id].col.load() < col)
+      {
+        /* Busy wait until left neighbor's row is greater than our row.
+        Then we know that it is safe to read entry to our left. */
+        while (thread_coords[left_neighbor_id].col.load() < col && thread_coords[left_neighbor_id].row.load() <= row)
+          ;
+      }
       // Compute cell once it is safe to do so.
       computeCell(row, col);
+      thread_coords[thread_id].row++;
     }
   }
 
@@ -137,12 +139,12 @@ protected:
     thread_timers[thread_id].start(); // Start timing for this thread
 
     // Start computing columns at index 1, because column 0 is all zeros.
-    int col = thread_id + 1;
-    while (col < matrix_width)
+    thread_coords[thread_id].col = thread_id + 1;
+    while (thread_coords[thread_id].col < matrix_width)
     {
-      computeColumn(thread_id, col);
+      computeColumn(thread_id);
       // Jump to column after the rightmost neighbor.
-      col += numThreads;
+      thread_coords[thread_id].col += numThreads;
     }
 
     thread_times_taken[thread_id] = thread_timers[thread_id].stop(); // Stop timing
@@ -306,8 +308,8 @@ int main(int argc, char *argv[])
 
   // Print the result
   printf("-_-_-_-_-_-_-_ LCS Parallel Results _-_-_-_-_-_-_-\n");
-  // lcs.print();
-  // printf("\n");
+  lcs.print();
+  printf("\n");
   lcs.printThreadStats();
   printf("Total time taken: %lf\n", total_time_taken);
 
