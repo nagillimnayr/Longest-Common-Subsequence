@@ -65,12 +65,8 @@ protected:
   std::vector<Timer> thread_timers;
   Timer solve_timer;
 
-  std::vector<int> thread_row_indices; /* To let other threads know which row a
+  std::vector<std::atomic<int>> thread_row_indices; /* To let other threads know which row a
   particular thread is on. */
-
-  std::vector<std::condition_variable> thread_cvs; /* Used to signal next thread
-  that a row has been completed. */
-  std::vector<std::mutex> thread_mutexes;
 
   void solveParallel(int thread_id)
   {
@@ -90,30 +86,32 @@ protected:
     {
       start_col = (thread_id * min_cols_per_thread) + excess_cols;
     }
-
+    start_col += 1; // Offset by 1 because first column is all zeros.
     int end_col = std::min(start_col + n_cols - 1, matrix_width - 1);
-    for (int row = 0; row < matrix_height; row++)
+    int row, col;
+    thread_row_indices[thread_id] = 1;
+    for (row = 1; row < matrix_height; row++)
     {
+      printf("thread_id: %d | row: %d \n",
+             thread_id, row);
       /* If not the leftmost thread, check if thread to the left is on a row
-      greater than ours. If not, block until they are. */
-      if (thread_id > 0 && thread_row_indices[thread_id - 1] <= row)
+      greater than ours. If not, busy wait until they are. */
+      if (thread_id > 0)
       {
-
-        std::unique_lock<std::mutex> ulock(thread_mutexes[thread_id - 1]);
-        thread_cvs[thread_id - 1].wait(ulock);
-        ulock.unlock();
+        while (thread_row_indices[thread_id - 1] <= row)
+          ;
       }
-      for (int col = start_col; col <= end_col; col++)
+
+      /* Once the neighbor to the left is on the row after us, we can freely
+      compute our segment of the row. */
+      for (col = start_col; col <= end_col; col++)
       {
         computeCell(row, col);
       }
 
-      thread_row_indices[thread_id] = row + 1;
-      if (thread_id < numThreads - 1)
-      {
-        // Signal neighbor to the right that they may begin their row.
-        thread_cvs[thread_id].notify_all();
-      }
+      /* This needs to be updated at the end of the loop to ensure that the last
+      update is recorded. */
+      thread_row_indices[thread_id] += 1;
     }
 
     thread_times_taken[thread_id] = thread_timers[thread_id].stop(); // Stop timing
@@ -128,22 +126,18 @@ public:
         sync_point(numThreads),
         thread_times_taken(numThreads, 0.0),
         thread_timers(numThreads),
-        thread_cvs(numThreads - 1),
-        thread_mutexes(numThreads - 1),
         thread_row_indices(numThreads)
   {
     for (int n = 0; n < numThreads; n++)
     {
-      thread_row_indices[n] = 1;
+      thread_row_indices[n].store(1);
     }
   }
 
   // Main solve method
   virtual void solve() override
   {
-    solve_timer.start();                             // Start overall timing
-    const int n_diagonals = length_a + length_b - 1; // Total diagonals
-
+    solve_timer.start(); // Start overall timing
     // Launch threads
     std::vector<std::thread> threads(numThreads);
 
