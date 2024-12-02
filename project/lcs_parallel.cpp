@@ -20,37 +20,37 @@ class Barrier
 {
 public:
   explicit Barrier(int num_threads)
-      : num_threads_(num_threads), count_(0), generation_(0) {}
+      : num_threads(num_threads), count(0), generation(0) {}
 
   void wait()
   {
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex);
 
     // Get the generation number when entering the barrier
-    int gen = generation_;
+    int gen = generation;
 
     // Increment the count of threads that have reached the barrier
-    if (++count_ == num_threads_)
+    if (++count == num_threads)
     {
       // If the last thread reached, reset for the next generation
-      generation_++;
-      count_ = 0;
-      cv_.notify_all(); // Wake all threads to continue
+      generation++;
+      count = 0;
+      cv.notify_all(); // Wake all threads to continue
     }
     else
     {
       // Wait for other threads to reach the barrier
-      cv_.wait(lock, [this, gen]
-               { return gen != generation_; });
+      cv.wait(lock, [this, gen]
+              { return gen != generation; });
     }
   }
 
 private:
-  int num_threads_;
-  int count_;
-  int generation_;
-  std::mutex mutex_;
-  std::condition_variable cv_;
+  int num_threads;
+  int count;
+  int generation;
+  std::mutex mutex;
+  std::condition_variable cv;
 };
 
 // Derived class for parallel computation of Longest Common Subsequence (LCS)
@@ -229,8 +229,6 @@ int main(int argc, char *argv[])
 
   // Print the result
   printf("-_-_-_-_-_-_-_ LCS Parallel Results _-_-_-_-_-_-_-\n");
-  // lcs.print();
-  // printf("\n");
   lcs.printThreadStats();
   printf("Total time taken: %lf\n", total_time_taken);
 
