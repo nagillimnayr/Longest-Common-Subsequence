@@ -117,11 +117,7 @@ protected:
 
     while (row < matrix_height)
     {
-      int left_neighbor_id = thread_id - 1;
-      if (thread_id == 0)
-      {
-        left_neighbor_id = numThreads - 1;
-      }
+      int left_neighbor_id = thread_id == 0 ? numThreads - 1 : thread_id - 1;
 
       /* If left neighbor is on a column greater than ours, then that means
       the column to our left is complete and we can safely compute the entirety
