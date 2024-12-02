@@ -92,8 +92,6 @@ protected:
     thread_row_indices[thread_id] = 1;
     for (row = 1; row < matrix_height; row++)
     {
-      printf("thread_id: %d | row: %d \n",
-             thread_id, row);
       /* If not the leftmost thread, check if thread to the left is on a row
       greater than ours. If not, busy wait until they are. */
       if (thread_id > 0)
