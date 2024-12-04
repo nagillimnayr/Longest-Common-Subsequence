@@ -1,4 +1,3 @@
-```markdown
 # Longest Common Subsequence (LCS) Project
 
 This project implements the Longest Common Subsequence (LCS) algorithm in three different versions:
@@ -12,7 +11,7 @@ Ensure that the following are installed on your system:
 - **C++14 Compiler** (e.g., g++ or clang++)
 - **MPI Compiler** (e.g., mpic++)
 - **CMake** (optional for building)
-- **pthread** library (for parallel version)
+- **thread** library (for the parallel version)
 
 ## File Structure
 
@@ -28,9 +27,13 @@ Ensure that the following are installed on your system:
 
 To test the LCS implementations, you need input files containing two sequences for which the LCS is calculated. Each sequence is stored in a separate file, and these files should contain strings of characters.
 
+Here's an updated version of the README section that includes information about CSV files, which can be relevant for storing and handling sequence data in a structured format:
+
+```markdown
 ### Step 1: Create Input Files
 
-You can generate input files manually or use the following format:
+You can generate input files manually or use the following formats:
+
 - **Input File 1 (`input1.txt`)**:
   ```
   AGGTAB
@@ -42,14 +45,39 @@ You can generate input files manually or use the following format:
 
 You can use any text editor to create these files, or you can use a script to generate different sequences for testing.
 
-### Example of Python script to generate input files:
+In addition to text files, you can also use **CSV files** to store sequences in a more structured format. For example:
+
+- **CSV Input File (`input.csv`)**:
+  ```
+  AGGTAB, GXTXAYB
+  ```
+
+In this case, the sequences are stored as comma-separated values, which can be parsed easily by the program.
+
+### Example of Python script to generate input files (Text and CSV format):
 ```python
+import csv
+
 def generate_input_files():
+    # Create text files
     with open('input1.txt', 'w') as f1, open('input2.txt', 'w') as f2:
         f1.write("AGGTAB\n")
         f2.write("GXTXAYB\n")
 
+    # Create CSV file
+    with open('input.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["AGGTAB", "GXTXAYB"])
+
 generate_input_files()
+```
+
+This Python script will generate:
+1. Two text files (`input1.txt` and `input2.txt`) containing the sequences.
+2. A CSV file (`input.csv`) with the sequences stored as comma-separated values.
+
+You can choose the format that best suits your needs, but both text and CSV formats are supported for testing.
+
 ```
 
 This Python script will generate the two input files needed for the LCS algorithms. Save this script and run it in the same directory as your LCS project.
@@ -79,7 +107,7 @@ make clean
 
 To run the serial version of the LCS algorithm, use the following command:
 ```bash
-./lcs_serial input1.txt input2.txt
+./lcs_serial --seqeunce_a input1.txt --sequence_b input2.txt
 ```
 
 This will run the serial LCS algorithm on the input sequences stored in `input1.txt` and `input2.txt`.
@@ -88,21 +116,30 @@ This will run the serial LCS algorithm on the input sequences stored in `input1.
 
 To run the parallel version of the LCS algorithm (using multiple threads), use the following command:
 ```bash
-./lcs_parallel input1.txt input2.txt
+./lcs_parallel --n_threads X --sequence_a input1.txt --sequence_b input2.txt
 ```
 
 This will run the parallel LCS algorithm on the input sequences, utilizing multiple threads for faster computation.
+
+In the above command:
+- `--n_threads X`: Specifies that X processes will be used for the distributed execution. You can adjust the number based on your system's available resources.
+- `--sequence_a`: Input parameter for the first seqeunce (A).
+- `--sequence_b`: Input parameter for the second seqeunce (B).
+
 
 ### 3. Run the Distributed Version (MPI)
 
 To run the distributed version of the LCS algorithm (using MPI), use the following command:
 ```bash
-mpirun -np 4 ./lcs_distributed input1.txt input2.txt
+mpirun --n_threads X --sequence_a input1.txt --sequence_b input2.txt
 ```
+This will run the distributed LCS algorithm on the input sequences, utilizing multiple processes for faster computation.
 
 In the above command:
 - `mpirun`: Starts the MPI processes.
-- `-np 4`: Specifies that 4 processes will be used for the distributed execution. You can adjust the number based on your system's available resources.
+- `--n_threads X`: Specifies that X processes will be used for the distributed execution. You can adjust the number based on your system's available resources.
+- `--sequence_a`: Input parameter for the first seqeunce (A).
+- `--sequence_b`: Input parameter for the second seqeunce (B).
 
 ### Output
 
