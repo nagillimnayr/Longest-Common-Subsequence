@@ -62,10 +62,14 @@ int main(int argc, char *argv[])
   cxxopts::Options options("lcs_serial", "Serial LCS implementation.");
 
   options.add_options(
-      "inputs", {{"sequence_a", "First input sequence.",
-                  cxxopts::value<std::string>()}, // First input sequence
-                 {"sequence_b", "Second input sequence.",
-                  cxxopts::value<std::string>()}}); // Second input sequence
+      "inputs", {
+                    {"sequence_a", "First input sequence.",
+                     cxxopts::value<std::string>()->default_value("")}, // First input sequence
+                    {"sequence_b", "Second input sequence.",
+                     cxxopts::value<std::string>()->default_value("")}, // Second input sequence
+                    {"input_file", "Path to input .csv file.",
+                     cxxopts::value<std::string>()->default_value("")}, // Input file.
+                });
 
   // Parse the command-line options
   auto command_options = options.parse(argc, argv);
@@ -73,6 +77,19 @@ int main(int argc, char *argv[])
   // Retrieve the input sequences from command-line arguments
   std::string sequence_a = command_options["sequence_a"].as<std::string>();
   std::string sequence_b = command_options["sequence_b"].as<std::string>();
+  std::string input_file = command_options["input_file"].as<std::string>();
+
+  if (input_file != "")
+  {
+    // Read sequences from .csv file.
+    read_input_csv(input_file, sequence_a, sequence_b);
+  }
+
+  if (sequence_a.length() < 1 || sequence_b.length() < 1)
+  {
+    std::cerr << "Error: sequences cannot be empty." << std::endl;
+    exit(1);
+  }
 
   // Print a separator line for clarity in the output
   printf("-------------------- LCS Serial --------------------\n");
@@ -81,7 +98,6 @@ int main(int argc, char *argv[])
   LongestCommonSubsequenceSerial lcs(sequence_a, sequence_b);
 
   // Print the length of the LCS and the time taken to compute it
-  lcs.printMatrix();
   lcs.printInfo();
   lcs.printTimeTaken();
 

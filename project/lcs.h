@@ -4,7 +4,10 @@
 
 #include "timer.h"
 #include <algorithm> // std::max
+#include <fstream>
 #include <iomanip>
+#include <iostream>
+#include <sstream>
 #include <string.h>
 
 /** Abstract Base class for LCS implementations */
@@ -265,5 +268,17 @@ public:
     printTotalTimeTaken();
   }
 };
+
+void read_input_csv(const std::string &input_file_path, std::string &sequence_a, std::string &sequence_b)
+{
+  std::ifstream in_file(input_file_path);
+  if (!in_file.is_open())
+  {
+    std::cerr << "Error reading file: " << input_file_path << std::endl;
+    exit(1);
+  }
+  std::getline(in_file, sequence_a, ',');
+  std::getline(in_file, sequence_b, ',');
+}
 
 #endif
