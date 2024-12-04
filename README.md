@@ -25,9 +25,7 @@ Ensure that the following are installed on your system:
 
 ## Generating Input Files
 
-To test the LCS implementations, you need input files containing two sequences for which the LCS is calculated. Each sequence is stored in a separate file, and these files should contain strings of characters.
-
-Here's an updated version of the README section that includes information about CSV files, which can be relevant for storing and handling sequence data in a structured format:
+To test the LCS implementations as easily as possible, you can create input files containing two sequences for which the LCS is calculated. Each sequence is stored in a separate file, and these files should contain strings of characters.
 
 ```markdown
 ### Step 1: Create Input Files
