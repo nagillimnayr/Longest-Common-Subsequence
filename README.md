@@ -126,9 +126,6 @@ This will remove the following files:
 - `lcs_distributed`
 - Object files (`*.o`, `*.obj`)
 
-
-```
-
 ## Summary of Updates:
 1. **Generating Input Files**: 
    - Detailed steps are included to create the input files manually or with a Python script.
