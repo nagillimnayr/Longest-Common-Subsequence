@@ -60,7 +60,9 @@ int main(int argc, char *argv[])
   printf("-------------------- LCS Serial --------------------\n");
 
   LongestCommonSubsequenceSerial lcs(sequence_a, sequence_b);
-  lcs.printLCSLength();
+  lcs.printMatrix();
+  lcs.printInfo();
+  // lcs.printLCSLength();
   lcs.printTimeTaken();
   return 0;
 }

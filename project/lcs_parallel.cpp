@@ -129,7 +129,7 @@ public:
   // Print thread-level statistics
   void printThreadStats()
   {
-    printf("-_-_-_-_-_-_-_ LCS Parallel Statistics _-_-_-_-_-_-_-\n\n");
+    printf("\n-_-_-_-_-_-_-_ LCS Parallel Statistics _-_-_-_-_-_-_-\n\n");
     printf("Thread ID || Time Taken\n");
     for (int id = 0; id < numThreads; id++)
     {
@@ -191,6 +191,7 @@ int main(int argc, char *argv[])
 
   // Print the result
   printf("-_-_-_-_-_-_-_ LCS Parallel Results _-_-_-_-_-_-_-\n");
+  lcs.print();
   lcs.printThreadStats();
   printf("Total time taken: %lf\n", total_time_taken);
 

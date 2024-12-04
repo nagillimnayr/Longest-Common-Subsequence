@@ -84,10 +84,6 @@ protected:
     int index = current - 1;
     while (index >= 0 && i > 0 && j > 0)
     {
-      // Don't go out of bounds.
-      i = std::max(i, 0);
-      j = std::max(j, 0);
-
       current = matrix[i][j];
       int top, left, top_left;
       top = left = top_left = 0;
