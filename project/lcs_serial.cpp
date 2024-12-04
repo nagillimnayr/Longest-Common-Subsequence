@@ -1,7 +1,7 @@
-#include <iostream>  // Standard I/O stream for input/output operations
+#include <iostream>
 
 #include "cxxopts.hpp"  // Header file for option parsing library (cxxopts)
-#include "lcs.h"  // Header file containing the LongestCommonSubsequence class
+#include "lcs.h"
 
 // Class implementing the Serial version of the Longest Common Subsequence
 // algorithm
