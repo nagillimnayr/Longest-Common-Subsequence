@@ -178,32 +178,42 @@ int main(int argc, char *argv[])
   // sequences)
   options.add_options(
       "inputs",
-      {{"n_threads", "Number of threads for the program",
-        cxxopts::value<int>()->default_value("1")}, // Default to 1 thread
-       {"sequence_a", "First sequence.",
-        cxxopts::value<std::string>()}, // First input sequence
-       {"sequence_b", "Second sequence.",
-        cxxopts::value<std::string>()}}); // Second input sequence
+      {
+          {"n_threads", "Number of threads for the program",
+           cxxopts::value<int>()->default_value("1")}, // Default to 1 thread
+          {"sequence_a", "First input sequence.",
+           cxxopts::value<std::string>()->default_value("")}, // First input sequence
+          {"sequence_b", "Second input sequence.",
+           cxxopts::value<std::string>()->default_value("")}, // Second input sequence
+          {"input_file", "Path to input .csv file.",
+           cxxopts::value<std::string>()->default_value("")} // Input file.
+
+      });
 
   // Parse the command-line options
   auto command_options = options.parse(argc, argv);
-  int n = command_options["n_threads"]
-              .as<int>(); // Get the number of threads from user input
+  int n_threads = command_options["n_threads"]
+                      .as<int>(); // Get the number of threads from user input
 
-  std::string seqA = command_options["sequence_a"]
-                         .as<std::string>(); // Get the first sequence
-  std::string seqB = command_options["sequence_b"]
-                         .as<std::string>(); // Get the second sequence
+  // Retrieve the input sequences from command-line arguments.
+  std::string sequence_a = command_options["sequence_a"].as<std::string>();
+  std::string sequence_b = command_options["sequence_b"].as<std::string>();
+  std::string input_file = command_options["input_file"].as<std::string>();
 
-  // Validate that the sequences are non-empty
-  if (seqA.empty() || seqB.empty())
+  if (input_file != "")
   {
-    std::cerr << "Error: Sequences cannot be empty.\n";
-    return 1;
+    // Read sequences from .csv file if file path was provided.
+    read_input_csv(input_file, sequence_a, sequence_b);
+  }
+
+  if (sequence_a.length() < 1 || sequence_b.length() < 1)
+  {
+    std::cerr << "Error: sequences cannot be empty." << std::endl;
+    exit(1);
   }
 
   // Validate that the number of threads is positive
-  if (n <= 0)
+  if (n_threads <= 0)
   {
     std::cerr << "Error: Number of threads must be greater than zero.\n";
     return 1;
@@ -211,11 +221,11 @@ int main(int argc, char *argv[])
 
   // Print basic information about the parallel LCS run
   printf("_-_-_-_-_-_-_-_-_ LCS Parallel _-_-_-_-_-_-_-_-_\n");
-  printf("Number of Threads: %d\n", n);
+  printf("Number of Threads: %d\n", n_threads);
   printf("Initializing Parallel Solver\n");
 
   // Create and solve the LCS problem with the specified number of threads
-  LongestCommonSubsequenceParallel lcs(seqA, seqB, n);
+  LongestCommonSubsequenceParallel lcs(sequence_a, sequence_b, n_threads);
 
   printf("Starting LCS Parallel Solver\n");
   lcs.solve(); // Compute the LCS using parallel threads
@@ -225,7 +235,7 @@ int main(int argc, char *argv[])
 
   // Print the results and performance statistics
   printf("-_-_-_-_-_-_-_ LCS Parallel Results _-_-_-_-_-_-_-\n");
-  lcs.print();
+  lcs.printInfo();
   lcs.printThreadStats();
   printf("Total time taken: %lf\n",
          total_time_taken); // Print the total time taken by the program

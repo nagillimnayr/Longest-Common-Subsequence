@@ -283,8 +283,8 @@ public:
 
   virtual void printInfo() override
   {
+    std::cout << "Longest common subsequence: " << longest_common_subsequence << "\n";
     printLCSLength();
-    // std::cout << "Longest common subsequence: " << longest_common_subsequence << "\n";
   }
 
   void printPerProcessMatrices()
@@ -323,7 +323,7 @@ public:
   {
     if (world_rank == 0)
     {
-      printf("\nrank | n_cols | time_taken\n");
+      printf("rank | n_cols | time_taken\n");
       printStats(0, matrix_time_taken);
     }
 
@@ -379,14 +379,32 @@ int main(int argc, char *argv[])
 
   options.add_options(
       "inputs",
-      {{"sequence_a", "First input sequence.", cxxopts::value<std::string>()},
-       {"sequence_b", "Second input sequence.",
-        cxxopts::value<std::string>()}});
+      {
+          {"sequence_a", "First input sequence.",
+           cxxopts::value<std::string>()->default_value("")}, // First input sequence
+          {"sequence_b", "Second input sequence.",
+           cxxopts::value<std::string>()->default_value("")}, // Second input sequence
+          {"input_file", "Path to input .csv file.",
+           cxxopts::value<std::string>()->default_value("")} // Input file.
+      });
 
   auto command_options = options.parse(argc, argv);
-
+  // Retrieve the input sequences from command-line arguments.
   std::string sequence_a = command_options["sequence_a"].as<std::string>();
   std::string sequence_b = command_options["sequence_b"].as<std::string>();
+  std::string input_file = command_options["input_file"].as<std::string>();
+
+  if (input_file != "")
+  {
+    // Read sequences from .csv file if file path was provided.
+    read_input_csv(input_file, sequence_a, sequence_b);
+  }
+
+  if (sequence_a.length() < 1 || sequence_b.length() < 1)
+  {
+    std::cerr << "Error: sequences cannot be empty." << std::endl;
+    exit(1);
+  }
 
   MPI_Init(NULL, NULL);
 

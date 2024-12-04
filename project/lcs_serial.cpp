@@ -68,20 +68,20 @@ int main(int argc, char *argv[])
                     {"sequence_b", "Second input sequence.",
                      cxxopts::value<std::string>()->default_value("")}, // Second input sequence
                     {"input_file", "Path to input .csv file.",
-                     cxxopts::value<std::string>()->default_value("")}, // Input file.
+                     cxxopts::value<std::string>()->default_value("")} // Input file.
                 });
 
   // Parse the command-line options
   auto command_options = options.parse(argc, argv);
 
-  // Retrieve the input sequences from command-line arguments
+  // Retrieve the input sequences from command-line arguments.
   std::string sequence_a = command_options["sequence_a"].as<std::string>();
   std::string sequence_b = command_options["sequence_b"].as<std::string>();
   std::string input_file = command_options["input_file"].as<std::string>();
 
   if (input_file != "")
   {
-    // Read sequences from .csv file.
+    // Read sequences from .csv file if file path was provided.
     read_input_csv(input_file, sequence_a, sequence_b);
   }
 
