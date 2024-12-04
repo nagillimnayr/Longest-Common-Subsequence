@@ -126,12 +126,10 @@ This will remove the following files:
 - `lcs_distributed`
 - Object files (`*.o`, `*.obj`)
 
-## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 ```
 
-### Summary of Updates:
+## Summary of Updates:
 1. **Generating Input Files**: 
    - Detailed steps are included to create the input files manually or with a Python script.
    - Clear instructions on how to generate `input1.txt` and `input2.txt`.
